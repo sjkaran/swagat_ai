@@ -1,0 +1,1442 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>SwagatAI — Smart Reception Assistant</title>
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@400;600;700;800&family=Noto+Sans+Odia:wght@400;600&family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;1,400&display=swap" rel="stylesheet"/>
+<style>
+  :root {
+    --saffron: #FF6B00;
+    --saffron-light: #FF8C3A;
+    --saffron-dark: #C44E00;
+    --teal: #007C6E;
+    --teal-light: #00A896;
+    --teal-glow: #00D4BB;
+    --cream: #FDF6ED;
+    --cream2: #F5EAD8;
+    --night: #0D1117;
+    --night2: #161C27;
+    --night3: #1E2636;
+    --charcoal: #2C3547;
+    --muted: #8895AE;
+    --white: #FFFFFF;
+    --gold: #F0A500;
+    --blue-glow: #4A9FFF;
+    --danger: #E84040;
+    --success: #2ECC71;
+    --face-skin: #F5C5A0;
+    --face-skin2: #E8A87C;
+    --face-dark: #C47A4A;
+    --face-lip: #D4756B;
+    --face-eye: #2C1810;
+    --face-hair: #1A0E08;
+    --face-white: #F8F4EF;
+    --orb-size: 320px;
+    --panel-gap: 24px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--night);
+    color: var(--white);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* ─── ANIMATED BACKGROUND ─── */
+  .bg-layer {
+    position: fixed; inset: 0; z-index: 0;
+    background: radial-gradient(ellipse 80% 60% at 50% 0%, #1a2540 0%, var(--night) 70%);
+  }
+  .bg-layer::before {
+    content: '';
+    position: absolute; inset: 0;
+    background: 
+      radial-gradient(circle 600px at 15% 50%, rgba(0,168,150,0.06) 0%, transparent 70%),
+      radial-gradient(circle 500px at 85% 40%, rgba(255,107,0,0.05) 0%, transparent 70%);
+    animation: bgPulse 8s ease-in-out infinite alternate;
+  }
+  @keyframes bgPulse {
+    from { opacity: 0.6; }
+    to { opacity: 1; }
+  }
+
+  /* grid overlay */
+  .bg-grid {
+    position: fixed; inset: 0; z-index: 0; opacity: 0.03;
+    background-image: linear-gradient(var(--teal-glow) 1px, transparent 1px),
+                      linear-gradient(90deg, var(--teal-glow) 1px, transparent 1px);
+    background-size: 48px 48px;
+  }
+
+  /* ─── LAYOUT ─── */
+  .app-shell {
+    position: relative; z-index: 1;
+    display: grid;
+    grid-template-rows: auto 1fr auto;
+    min-height: 100vh;
+  }
+
+  /* ─── HEADER ─── */
+  header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 18px 36px;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+    backdrop-filter: blur(20px);
+    background: rgba(13,17,23,0.7);
+  }
+  .logo-group { display: flex; align-items: center; gap: 14px; }
+  .logo-icon {
+    width: 44px; height: 44px;
+    background: linear-gradient(135deg, var(--saffron) 0%, var(--gold) 100%);
+    border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 22px; font-weight: 800;
+    color: white; letter-spacing: -1px;
+    box-shadow: 0 0 20px rgba(255,107,0,0.35);
+    font-family: 'Baloo 2', sans-serif;
+  }
+  .logo-text { font-family: 'Baloo 2', sans-serif; }
+  .logo-text h1 { font-size: 22px; font-weight: 800; color: var(--white); letter-spacing: -0.5px; }
+  .logo-text p { font-size: 11px; color: var(--muted); font-weight: 400; margin-top: -2px; letter-spacing: 0.5px; }
+
+  .header-controls { display: flex; align-items: center; gap: 12px; }
+  .lang-pill {
+    display: flex; background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 30px; padding: 3px;
+    gap: 2px;
+  }
+  .lang-btn {
+    padding: 5px 14px; border-radius: 26px;
+    font-size: 12px; font-weight: 500; cursor: pointer;
+    border: none; background: transparent; color: var(--muted);
+    transition: all 0.25s;
+  }
+  .lang-btn.active {
+    background: var(--saffron); color: white;
+    box-shadow: 0 0 10px rgba(255,107,0,0.4);
+  }
+  .mode-toggle {
+    display: flex; align-items: center; gap: 8px;
+    padding: 7px 16px;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 30px; cursor: pointer;
+    font-size: 12px; font-weight: 500; color: var(--muted);
+    transition: all 0.25s;
+  }
+  .mode-toggle:hover { border-color: var(--teal-light); color: var(--teal-light); }
+  .mode-dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: var(--success); animation: pulse-dot 2s infinite;
+  }
+  @keyframes pulse-dot {
+    0%,100% { box-shadow: 0 0 0 0 rgba(46,204,113,0.4); }
+    50% { box-shadow: 0 0 0 6px rgba(46,204,113,0); }
+  }
+
+  /* ─── MAIN CONTENT ─── */
+  .main-content {
+    display: grid;
+    grid-template-columns: 340px 1fr 300px;
+    gap: var(--panel-gap);
+    padding: 28px 28px;
+    align-items: start;
+  }
+
+  /* ─── LEFT PANEL: AVATAR ─── */
+  .avatar-panel {
+    display: flex; flex-direction: column; align-items: center; gap: 20px;
+  }
+
+  .orb-container {
+    position: relative;
+    width: var(--orb-size); height: var(--orb-size);
+    flex-shrink: 0;
+  }
+
+  /* Outer glowing ring */
+  .orb-ring {
+    position: absolute; inset: -12px;
+    border-radius: 50%;
+    border: 1.5px solid transparent;
+    background: linear-gradient(var(--night), var(--night)) padding-box,
+                linear-gradient(135deg, var(--teal-glow), var(--saffron), var(--teal-glow)) border-box;
+    animation: ringRotate 6s linear infinite;
+  }
+  @keyframes ringRotate {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+  }
+  .orb-ring::before {
+    content: '';
+    position: absolute; inset: -4px;
+    border-radius: 50%;
+    background: transparent;
+    box-shadow: 0 0 40px rgba(0,212,187,0.15), 0 0 80px rgba(255,107,0,0.08);
+    animation: glowPulse 3s ease-in-out infinite alternate;
+  }
+  @keyframes glowPulse {
+    from { box-shadow: 0 0 30px rgba(0,212,187,0.12), 0 0 60px rgba(255,107,0,0.06); }
+    to { box-shadow: 0 0 60px rgba(0,212,187,0.25), 0 0 100px rgba(255,107,0,0.12); }
+  }
+
+  /* Face SVG */
+  .face-svg-wrap {
+    position: absolute; inset: 0; border-radius: 50%; overflow: hidden;
+    background: radial-gradient(circle at 35% 35%, #F7D4B5, #D4895A);
+  }
+
+  svg#face {
+    width: 100%; height: 100%;
+  }
+
+  /* Blink animation */
+  @keyframes blink {
+    0%, 90%, 100% { transform: scaleY(1); }
+    95% { transform: scaleY(0.05); }
+  }
+
+  .eye-group { transform-origin: center; }
+  #eye-left { animation: blink 4.5s ease-in-out infinite; transform-origin: 130px 145px; }
+  #eye-right { animation: blink 4.5s ease-in-out infinite 0.1s; transform-origin: 192px 145px; }
+
+  /* Mouth speaking animation */
+  @keyframes speakMouth {
+    0%,100% { d: path("M 122 185 Q 162 195 202 185"); }
+    25% { d: path("M 122 188 Q 162 202 202 188"); }
+    50% { d: path("M 122 183 Q 162 192 202 183"); }
+    75% { d: path("M 122 190 Q 162 205 202 190"); }
+  }
+  @keyframes idleMouth {
+    0%,100% { d: path("M 125 185 Q 162 193 199 185"); }
+    50% { d: path("M 125 186 Q 162 194 199 186"); }
+  }
+
+  #mouth-path {
+    animation: idleMouth 3s ease-in-out infinite;
+  }
+  .speaking #mouth-path {
+    animation: speakMouth 0.35s ease-in-out infinite;
+  }
+
+  /* Head subtle bob */
+  @keyframes headBob {
+    0%,100% { transform: translateY(0px) rotate(0deg); }
+    33% { transform: translateY(-3px) rotate(0.5deg); }
+    66% { transform: translateY(2px) rotate(-0.3deg); }
+  }
+  #head-group {
+    animation: headBob 5s ease-in-out infinite;
+  }
+
+  /* Eyebrow raise on speaking */
+  @keyframes browRaise {
+    0%,100% { transform: translateY(0); }
+    50% { transform: translateY(-3px); }
+  }
+  .speaking #brow-left,
+  .speaking #brow-right {
+    animation: browRaise 0.6s ease-in-out infinite;
+  }
+
+  /* Status badge on orb */
+  .orb-status {
+    position: absolute; bottom: 10px; left: 50%;
+    transform: translateX(-50%);
+    background: rgba(13,17,23,0.85);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 20px;
+    padding: 5px 14px;
+    font-size: 11px; font-weight: 500;
+    color: var(--muted); white-space: nowrap;
+    backdrop-filter: blur(10px);
+    display: flex; align-items: center; gap: 6px;
+  }
+  .status-indicator {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: var(--success);
+  }
+  .speaking-wave {
+    display: none;
+    align-items: center; gap: 2px;
+  }
+  .speaking-wave span {
+    display: block; width: 2px; background: var(--teal-glow);
+    border-radius: 2px;
+    animation: waveBar 0.5s ease-in-out infinite;
+  }
+  .speaking-wave span:nth-child(1) { height: 8px; animation-delay: 0s; }
+  .speaking-wave span:nth-child(2) { height: 14px; animation-delay: 0.1s; }
+  .speaking-wave span:nth-child(3) { height: 10px; animation-delay: 0.2s; }
+  .speaking-wave span:nth-child(4) { height: 16px; animation-delay: 0.05s; }
+  .speaking-wave span:nth-child(5) { height: 8px; animation-delay: 0.15s; }
+  @keyframes waveBar {
+    0%,100% { transform: scaleY(0.4); }
+    50% { transform: scaleY(1.2); }
+  }
+  .app-shell.speaking .speaking-wave { display: flex; }
+  .app-shell.speaking .status-text { display: none; }
+
+  /* Avatar info */
+  .avatar-name {
+    text-align: center;
+    font-family: 'Baloo 2', sans-serif;
+    font-size: 26px; font-weight: 700;
+    background: linear-gradient(135deg, var(--teal-glow), var(--white));
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  .avatar-tagline {
+    text-align: center; font-size: 13px; color: var(--muted);
+    letter-spacing: 0.3px;
+  }
+
+  /* Quick stats row */
+  .stats-row {
+    display: flex; gap: 12px; width: 100%;
+  }
+  .stat-card {
+    flex: 1;
+    background: var(--night2);
+    border: 1px solid rgba(255,255,255,0.07);
+    border-radius: 12px;
+    padding: 12px;
+    text-align: center;
+  }
+  .stat-card .val {
+    font-size: 20px; font-weight: 700;
+    font-family: 'Baloo 2', sans-serif;
+    color: var(--teal-glow);
+  }
+  .stat-card .lbl {
+    font-size: 10px; color: var(--muted); margin-top: 2px;
+    text-transform: uppercase; letter-spacing: 0.5px;
+  }
+
+  /* ─── CENTER PANEL: CONVERSATION ─── */
+  .convo-panel {
+    display: flex; flex-direction: column; gap: 16px;
+  }
+
+  .panel-card {
+    background: var(--night2);
+    border: 1px solid rgba(255,255,255,0.07);
+    border-radius: 18px;
+    overflow: hidden;
+  }
+
+  .panel-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 14px 20px;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+  }
+  .panel-title {
+    font-size: 13px; font-weight: 600;
+    color: var(--muted); text-transform: uppercase; letter-spacing: 0.8px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .panel-icon { font-size: 14px; }
+
+  /* Conversation feed */
+  .convo-feed {
+    padding: 20px;
+    display: flex; flex-direction: column; gap: 14px;
+    min-height: 320px; max-height: 380px;
+    overflow-y: auto;
+    scroll-behavior: smooth;
+  }
+  .convo-feed::-webkit-scrollbar { width: 4px; }
+  .convo-feed::-webkit-scrollbar-track { background: transparent; }
+  .convo-feed::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 2px; }
+
+  .msg {
+    display: flex; gap: 10px; align-items: flex-start;
+    animation: msgIn 0.3s cubic-bezier(0.34,1.56,0.64,1);
+  }
+  @keyframes msgIn {
+    from { opacity: 0; transform: translateY(12px) scale(0.96); }
+    to { opacity: 1; transform: none; }
+  }
+  .msg.visitor { flex-direction: row-reverse; }
+
+  .msg-avatar {
+    width: 32px; height: 32px; border-radius: 50%; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px; font-weight: 600;
+  }
+  .msg-avatar.ai-av {
+    background: linear-gradient(135deg, var(--teal), var(--teal-glow));
+    font-size: 12px; color: white;
+  }
+  .msg-avatar.visitor-av {
+    background: rgba(255,107,0,0.15);
+    border: 1px solid rgba(255,107,0,0.3);
+    color: var(--saffron);
+  }
+
+  .msg-bubble {
+    max-width: 78%; padding: 11px 15px;
+    border-radius: 16px; font-size: 14px; line-height: 1.55;
+  }
+  .msg.ai .msg-bubble {
+    background: rgba(0,168,150,0.1);
+    border: 1px solid rgba(0,212,187,0.15);
+    border-bottom-left-radius: 4px;
+    color: #E8F5F3;
+  }
+  .msg.visitor .msg-bubble {
+    background: rgba(255,107,0,0.1);
+    border: 1px solid rgba(255,107,0,0.2);
+    border-bottom-right-radius: 4px;
+    color: #FFF0E6;
+    text-align: right;
+  }
+  .msg-meta {
+    font-size: 10px; color: var(--muted); margin-top: 4px;
+  }
+  .visitor .msg-meta { text-align: right; }
+
+  /* Typing indicator */
+  .typing-indicator {
+    display: none; align-items: center; gap: 5px; padding: 10px 14px;
+    background: rgba(0,168,150,0.08);
+    border: 1px solid rgba(0,212,187,0.1);
+    border-radius: 16px; border-bottom-left-radius: 4px;
+    width: fit-content;
+  }
+  .typing-indicator span {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: var(--teal-glow);
+    animation: typingDot 1.2s ease-in-out infinite;
+  }
+  .typing-indicator span:nth-child(2) { animation-delay: 0.2s; }
+  .typing-indicator span:nth-child(3) { animation-delay: 0.4s; }
+  @keyframes typingDot {
+    0%,80%,100% { transform: scale(0.6); opacity: 0.4; }
+    40% { transform: scale(1); opacity: 1; }
+  }
+
+  /* Input zone */
+  .input-zone {
+    padding: 16px 20px;
+    border-top: 1px solid rgba(255,255,255,0.06);
+    display: flex; flex-direction: column; gap: 12px;
+  }
+
+  .input-row {
+    display: flex; gap: 10px; align-items: center;
+  }
+
+  .text-input {
+    flex: 1; background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 12px; padding: 11px 16px;
+    color: white; font-size: 14px; font-family: 'DM Sans', sans-serif;
+    outline: none; transition: border-color 0.2s;
+    resize: none;
+  }
+  .text-input::placeholder { color: var(--muted); }
+  .text-input:focus { border-color: var(--teal-light); }
+
+  .btn {
+    display: inline-flex; align-items: center; gap: 7px;
+    padding: 10px 18px; border-radius: 10px;
+    font-size: 13px; font-weight: 600;
+    cursor: pointer; border: none; transition: all 0.2s;
+    font-family: 'DM Sans', sans-serif;
+  }
+  .btn-primary {
+    background: linear-gradient(135deg, var(--teal), var(--teal-light));
+    color: white;
+    box-shadow: 0 4px 15px rgba(0,168,150,0.3);
+  }
+  .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(0,168,150,0.4); }
+  .btn-primary:active { transform: translateY(0); }
+
+  .btn-voice {
+    width: 44px; height: 44px; border-radius: 12px;
+    background: rgba(255,107,0,0.1);
+    border: 1px solid rgba(255,107,0,0.25);
+    color: var(--saffron);
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; transition: all 0.2s;
+    flex-shrink: 0;
+  }
+  .btn-voice:hover { background: rgba(255,107,0,0.2); border-color: var(--saffron); }
+  .btn-voice.listening {
+    background: rgba(255,107,0,0.25);
+    border-color: var(--saffron);
+    animation: listenPulse 1s ease-in-out infinite;
+  }
+  @keyframes listenPulse {
+    0%,100% { box-shadow: 0 0 0 0 rgba(255,107,0,0.3); }
+    50% { box-shadow: 0 0 0 8px rgba(255,107,0,0); }
+  }
+
+  .input-hints {
+    display: flex; gap: 8px; flex-wrap: wrap;
+  }
+  .hint-chip {
+    padding: 5px 11px;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 20px; font-size: 11px; color: var(--muted);
+    cursor: pointer; transition: all 0.2s;
+  }
+  .hint-chip:hover { border-color: var(--teal-light); color: var(--teal-light); background: rgba(0,212,187,0.06); }
+
+  /* Fallback AI badge */
+  .ai-fallback-badge {
+    display: inline-flex; align-items: center; gap: 5px;
+    background: rgba(240,165,0,0.1);
+    border: 1px solid rgba(240,165,0,0.25);
+    border-radius: 20px; padding: 3px 10px;
+    font-size: 10px; color: var(--gold); font-weight: 500;
+  }
+
+  /* ─── RIGHT PANEL: TRAINING ─── */
+  .training-panel {
+    display: flex; flex-direction: column; gap: 14px;
+  }
+
+  .train-form {
+    display: flex; flex-direction: column; gap: 10px;
+    padding: 16px;
+  }
+
+  .field-label {
+    font-size: 11px; font-weight: 600; color: var(--muted);
+    text-transform: uppercase; letter-spacing: 0.6px;
+    margin-bottom: 4px;
+  }
+
+  .field-group { display: flex; flex-direction: column; }
+
+  .train-input {
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.09);
+    border-radius: 10px; padding: 10px 12px;
+    color: white; font-size: 13px; font-family: 'DM Sans', sans-serif;
+    outline: none; transition: border-color 0.2s; resize: none;
+  }
+  .train-input::placeholder { color: rgba(136,149,174,0.5); }
+  .train-input:focus { border-color: var(--saffron); }
+
+  .btn-saffron {
+    background: linear-gradient(135deg, var(--saffron), var(--gold));
+    color: white;
+    box-shadow: 0 4px 15px rgba(255,107,0,0.25);
+  }
+  .btn-saffron:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(255,107,0,0.35); }
+  .btn-saffron:active { transform: translateY(0); }
+
+  /* Suggestions list */
+  .suggestions-list {
+    display: flex; flex-direction: column; gap: 8px;
+    padding: 12px 16px;
+    max-height: 280px; overflow-y: auto;
+  }
+  .suggestions-list::-webkit-scrollbar { width: 3px; }
+  .suggestions-list::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.08); border-radius: 2px; }
+
+  .suggestion-item {
+    display: flex; align-items: flex-start; justify-content: space-between;
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.07);
+    border-radius: 10px; padding: 10px 12px;
+    gap: 8px; cursor: pointer; transition: all 0.2s;
+  }
+  .suggestion-item:hover { border-color: var(--saffron); background: rgba(255,107,0,0.05); }
+  .suggestion-q { font-size: 12px; color: #CDD6E8; line-height: 1.4; flex: 1; }
+  .suggestion-badge {
+    font-size: 10px; background: rgba(255,107,0,0.15);
+    color: var(--saffron); padding: 2px 7px; border-radius: 10px;
+    white-space: nowrap; flex-shrink: 0;
+    font-weight: 600;
+  }
+
+  /* Knowledge base count */
+  .kb-row {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 10px 16px;
+    border-top: 1px solid rgba(255,255,255,0.06);
+    font-size: 12px; color: var(--muted);
+  }
+  .kb-count { color: var(--teal-glow); font-weight: 600; }
+
+  /* Trained items */
+  .trained-list {
+    display: flex; flex-direction: column; gap: 6px;
+    padding: 10px 16px;
+    max-height: 200px; overflow-y: auto;
+  }
+  .trained-item {
+    font-size: 12px; color: #A8B5C8; display: flex; gap: 8px; align-items: flex-start;
+    padding: 7px 10px;
+    background: rgba(0,212,187,0.04);
+    border-radius: 8px; border: 1px solid rgba(0,212,187,0.08);
+    line-height: 1.4;
+  }
+  .trained-item::before { content: '✓'; color: var(--teal-glow); flex-shrink: 0; font-size: 11px; margin-top: 1px; }
+
+  /* ─── FOOTER ─── */
+  footer {
+    text-align: center;
+    padding: 14px 36px;
+    border-top: 1px solid rgba(255,255,255,0.04);
+    font-size: 11px; color: rgba(136,149,174,0.5);
+    display: flex; align-items: center; justify-content: space-between;
+    letter-spacing: 0.2px;
+  }
+  .footer-brand { display: flex; align-items: center; gap: 6px; }
+  .powered-by { display: flex; align-items: center; gap: 6px; }
+  .odisha-pride {
+    background: linear-gradient(90deg, var(--saffron), var(--gold));
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    font-weight: 600;
+  }
+
+  /* ─── VOICE RIPPLE (full screen listening overlay) ─── */
+  .listen-overlay {
+    display: none;
+    position: fixed; inset: 0; z-index: 100;
+    background: rgba(10,14,20,0.9);
+    align-items: center; justify-content: center;
+    flex-direction: column; gap: 20px;
+    backdrop-filter: blur(10px);
+  }
+  .listen-overlay.active { display: flex; }
+  .listen-ripple {
+    width: 80px; height: 80px; border-radius: 50%;
+    background: rgba(255,107,0,0.15);
+    border: 2px solid var(--saffron);
+    display: flex; align-items: center; justify-content: center;
+    position: relative;
+    font-size: 28px;
+  }
+  .listen-ripple::before, .listen-ripple::after {
+    content: ''; position: absolute;
+    border-radius: 50%;
+    border: 1.5px solid rgba(255,107,0,0.4);
+    animation: rippleOut 1.8s ease-out infinite;
+  }
+  .listen-ripple::before { width: 120px; height: 120px; }
+  .listen-ripple::after { width: 160px; height: 160px; animation-delay: 0.5s; }
+  @keyframes rippleOut {
+    0% { transform: scale(0.8); opacity: 0.6; }
+    100% { transform: scale(1.3); opacity: 0; }
+  }
+  .listen-text { color: white; font-size: 18px; font-weight: 500; }
+  .listen-sub { color: var(--muted); font-size: 13px; }
+  .listen-cancel {
+    margin-top: 10px; padding: 10px 24px;
+    background: rgba(255,255,255,0.08);
+    border: 1px solid rgba(255,255,255,0.15);
+    border-radius: 30px; color: white; cursor: pointer;
+    font-size: 13px; transition: all 0.2s;
+  }
+  .listen-cancel:hover { background: rgba(255,255,255,0.14); }
+
+  /* ─── TOAST ─── */
+  .toast-container {
+    position: fixed; bottom: 80px; right: 24px;
+    display: flex; flex-direction: column; gap: 8px; z-index: 200;
+  }
+  .toast {
+    padding: 10px 18px; border-radius: 12px;
+    font-size: 13px; font-weight: 500;
+    animation: toastIn 0.3s cubic-bezier(0.34,1.56,0.64,1);
+    max-width: 280px;
+  }
+  @keyframes toastIn {
+    from { opacity: 0; transform: translateX(20px); }
+    to { opacity: 1; transform: none; }
+  }
+  .toast.success { background: rgba(46,204,113,0.15); border: 1px solid rgba(46,204,113,0.3); color: #7FFFC4; }
+  .toast.info { background: rgba(0,168,150,0.15); border: 1px solid rgba(0,212,187,0.3); color: var(--teal-glow); }
+
+  /* Tab switcher for right panel */
+  .tab-bar {
+    display: flex; padding: 12px 16px 0;
+    gap: 4px; border-bottom: 1px solid rgba(255,255,255,0.06);
+  }
+  .tab-btn {
+    padding: 7px 14px; border-radius: 8px 8px 0 0;
+    font-size: 12px; font-weight: 500; cursor: pointer;
+    border: none; background: transparent; color: var(--muted);
+    transition: all 0.2s; border-bottom: 2px solid transparent;
+  }
+  .tab-btn.active { color: var(--saffron); border-bottom-color: var(--saffron); }
+
+  /* scrollbar global */
+  ::-webkit-scrollbar { width: 4px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.08); border-radius: 2px; }
+</style>
+</head>
+<body>
+<div class="bg-layer"></div>
+<div class="bg-grid"></div>
+
+<!-- Listening overlay -->
+<div class="listen-overlay" id="listenOverlay">
+  <div class="listen-ripple">🎤</div>
+  <div class="listen-text" id="listenLang">Listening...</div>
+  <div class="listen-sub">Speak in Odia, Hindi, or English</div>
+  <div class="listen-cancel" onclick="stopListening()">Cancel</div>
+</div>
+
+<!-- Toast -->
+<div class="toast-container" id="toastContainer"></div>
+
+<div class="app-shell" id="appShell">
+
+  <!-- HEADER -->
+  <header>
+    <div class="logo-group">
+      <div class="logo-icon">ସ୍ୱ</div>
+      <div class="logo-text">
+        <h1>SwagatAI</h1>
+        <p>ସ୍ୱାଗତ ● स्वागत ● Welcome</p>
+      </div>
+    </div>
+    <div class="header-controls">
+      <div class="lang-pill">
+        <button class="lang-btn active" onclick="setLang('or')">ଓଡ଼ିଆ</button>
+        <button class="lang-btn" onclick="setLang('hi')">हिन्दी</button>
+        <button class="lang-btn" onclick="setLang('en')">English</button>
+      </div>
+      <div class="mode-toggle" onclick="toggleMode()">
+        <div class="mode-dot"></div>
+        <span id="modeLabel">Visitor Mode</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- MAIN -->
+  <div class="main-content">
+
+    <!-- LEFT: AVATAR -->
+    <div class="avatar-panel">
+      <div class="orb-container">
+        <div class="orb-ring"></div>
+        <div class="face-svg-wrap">
+          <svg id="face" viewBox="0 0 320 340" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <!-- Skin gradient -->
+              <radialGradient id="skinGrad" cx="40%" cy="30%" r="65%">
+                <stop offset="0%" stop-color="#F8D5B5"/>
+                <stop offset="60%" stop-color="#E8A87C"/>
+                <stop offset="100%" stop-color="#C4784A"/>
+              </radialGradient>
+              <!-- Hair gradient -->
+              <radialGradient id="hairGrad" cx="50%" cy="0%" r="70%">
+                <stop offset="0%" stop-color="#3D2010"/>
+                <stop offset="100%" stop-color="#120A04"/>
+              </radialGradient>
+              <!-- Cheek blush -->
+              <radialGradient id="blushL" cx="50%" cy="50%" r="50%">
+                <stop offset="0%" stop-color="#E88060" stop-opacity="0.35"/>
+                <stop offset="100%" stop-color="#E88060" stop-opacity="0"/>
+              </radialGradient>
+              <radialGradient id="blushR" cx="50%" cy="50%" r="50%">
+                <stop offset="0%" stop-color="#E88060" stop-opacity="0.35"/>
+                <stop offset="100%" stop-color="#E88060" stop-opacity="0"/>
+              </radialGradient>
+              <!-- Eye gloss -->
+              <radialGradient id="eyeGloss" cx="35%" cy="30%" r="60%">
+                <stop offset="0%" stop-color="#FFFFFF" stop-opacity="0.8"/>
+                <stop offset="100%" stop-color="#FFFFFF" stop-opacity="0"/>
+              </radialGradient>
+              <!-- Neck shadow -->
+              <linearGradient id="neckGrad" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stop-color="#D4895A"/>
+                <stop offset="100%" stop-color="#B5713A"/>
+              </linearGradient>
+              <!-- Clip for face circle -->
+              <clipPath id="faceClip">
+                <ellipse cx="160" cy="158" rx="130" ry="148"/>
+              </clipPath>
+            </defs>
+
+            <g id="head-group">
+
+              <!-- NECK -->
+              <rect x="130" y="280" width="60" height="60" rx="6" fill="url(#neckGrad)"/>
+              <!-- Neck shadow line -->
+              <rect x="148" y="282" width="4" height="50" rx="2" fill="#B06030" opacity="0.25"/>
+
+              <!-- COLLAR / CLOTHING -->
+              <path d="M 60 330 Q 90 295 130 288 L 160 295 L 190 288 Q 230 295 260 330 Z" fill="#1A3A5C"/>
+              <path d="M 130 288 L 160 310 L 190 288 L 160 295 Z" fill="#0D2A45"/>
+              <!-- Clothing detail -->
+              <path d="M 80 330 Q 110 310 130 300" stroke="#2A5080" stroke-width="1.5" fill="none" opacity="0.6"/>
+              <path d="M 240 330 Q 210 310 190 300" stroke="#2A5080" stroke-width="1.5" fill="none" opacity="0.6"/>
+
+              <!-- MAIN FACE ELLIPSE -->
+              <ellipse cx="160" cy="158" rx="130" ry="148" fill="url(#skinGrad)"/>
+
+              <!-- FACE SHADING (clip to face) -->
+              <g clip-path="url(#faceClip)">
+                <!-- Side shadow left -->
+                <ellipse cx="48" cy="160" rx="55" ry="120" fill="#C4784A" opacity="0.3"/>
+                <!-- Side shadow right -->
+                <ellipse cx="272" cy="160" rx="55" ry="120" fill="#C4784A" opacity="0.3"/>
+                <!-- Forehead light -->
+                <ellipse cx="160" cy="80" rx="70" ry="55" fill="#FAE0C0" opacity="0.35"/>
+              </g>
+
+              <!-- HAIR (drawn over face top) -->
+              <!-- Back hair volume -->
+              <ellipse cx="160" cy="60" rx="128" ry="75" fill="url(#hairGrad)"/>
+              <!-- Hair top -->
+              <path d="M 40 80 Q 45 20 100 10 Q 130 4 160 4 Q 190 4 220 10 Q 275 20 280 80
+                        Q 260 50 220 42 Q 190 36 160 36 Q 130 36 100 42 Q 60 50 40 80 Z" fill="#1A0E08"/>
+              <!-- Hair parting / side swept -->
+              <path d="M 80 36 Q 120 28 160 30" stroke="#2A1A0C" stroke-width="3" fill="none" opacity="0.5"/>
+              <!-- Hair highlight -->
+              <path d="M 100 12 Q 130 8 155 10" stroke="#4A2810" stroke-width="2.5" fill="none" opacity="0.8" stroke-linecap="round"/>
+
+              <!-- EAR LEFT -->
+              <ellipse cx="33" cy="165" rx="14" ry="20" fill="#D4895A"/>
+              <ellipse cx="35" cy="165" rx="9" ry="14" fill="#C4784A" opacity="0.6"/>
+              <!-- EAR RIGHT -->
+              <ellipse cx="287" cy="165" rx="14" ry="20" fill="#D4895A"/>
+              <ellipse cx="285" cy="165" rx="9" ry="14" fill="#C4784A" opacity="0.6"/>
+
+              <!-- EYEBROWS -->
+              <path id="brow-left" d="M 105 118 Q 125 110 148 112" stroke="#2C1810" stroke-width="4" fill="none" stroke-linecap="round"/>
+              <path id="brow-right" d="M 172 112 Q 195 110 215 118" stroke="#2C1810" stroke-width="4" fill="none" stroke-linecap="round"/>
+
+              <!-- EYES -->
+              <!-- Eye socket shadow left -->
+              <ellipse cx="130" cy="148" rx="26" ry="20" fill="#C4784A" opacity="0.2"/>
+              <!-- Eye socket shadow right -->
+              <ellipse cx="192" cy="148" rx="26" ry="20" fill="#C4784A" opacity="0.2"/>
+
+              <!-- Eye white left -->
+              <g id="eye-left">
+                <ellipse cx="130" cy="145" rx="22" ry="16" fill="#F8F4EF"/>
+                <!-- Iris left -->
+                <ellipse cx="130" cy="145" rx="13" ry="13" fill="#5A3010"/>
+                <!-- Pupil left -->
+                <ellipse cx="130" cy="145" rx="8" ry="8" fill="#1A0A04"/>
+                <!-- Eye gloss left -->
+                <ellipse cx="124" cy="140" rx="5" ry="4" fill="url(#eyeGloss)"/>
+                <!-- Mini highlight -->
+                <circle cx="135" cy="148" r="1.5" fill="white" opacity="0.6"/>
+                <!-- Upper eyelid -->
+                <path d="M 108 140 Q 130 130 152 140" stroke="#6A3C1A" stroke-width="2" fill="none" stroke-linecap="round"/>
+                <!-- Lower lash line -->
+                <path d="M 110 152 Q 130 158 150 152" stroke="#8A5030" stroke-width="1" fill="none" stroke-linecap="round" opacity="0.5"/>
+              </g>
+
+              <!-- Eye white right -->
+              <g id="eye-right">
+                <ellipse cx="192" cy="145" rx="22" ry="16" fill="#F8F4EF"/>
+                <!-- Iris right -->
+                <ellipse cx="192" cy="145" rx="13" ry="13" fill="#5A3010"/>
+                <!-- Pupil right -->
+                <ellipse cx="192" cy="145" rx="8" ry="8" fill="#1A0A04"/>
+                <!-- Eye gloss right -->
+                <ellipse cx="186" cy="140" rx="5" ry="4" fill="url(#eyeGloss)"/>
+                <circle cx="197" cy="148" r="1.5" fill="white" opacity="0.6"/>
+                <!-- Upper eyelid -->
+                <path d="M 170 140 Q 192 130 214 140" stroke="#6A3C1A" stroke-width="2" fill="none" stroke-linecap="round"/>
+                <path d="M 172 152 Q 192 158 212 152" stroke="#8A5030" stroke-width="1" fill="none" stroke-linecap="round" opacity="0.5"/>
+              </g>
+
+              <!-- NOSE -->
+              <path d="M 160 160 L 148 188 Q 154 194 160 195 Q 166 194 172 188 Z" fill="#C87848" opacity="0.35"/>
+              <ellipse cx="152" cy="190" rx="8" ry="6" fill="#C07040" opacity="0.5"/>
+              <ellipse cx="168" cy="190" rx="8" ry="6" fill="#C07040" opacity="0.5"/>
+              <!-- Nose bridge -->
+              <path d="M 160 148 Q 156 170 150 186" stroke="#C07040" stroke-width="1.5" fill="none" opacity="0.3" stroke-linecap="round"/>
+
+              <!-- CHEEK BLUSH -->
+              <ellipse cx="96" cy="182" rx="30" ry="20" fill="url(#blushL)"/>
+              <ellipse cx="224" cy="182" rx="30" ry="20" fill="url(#blushR)"/>
+
+              <!-- PHILTRUM -->
+              <path d="M 156 196 Q 160 200 164 196" stroke="#B06030" stroke-width="1" fill="none" opacity="0.4"/>
+
+              <!-- LIPS -->
+              <g id="mouth-group">
+                <!-- Upper lip -->
+                <path d="M 125 205 Q 135 200 148 202 Q 160 198 172 202 Q 185 200 195 205
+                          Q 178 210 160 209 Q 142 210 125 205 Z" fill="#C86858"/>
+                <!-- Lower lip -->
+                <path d="M 125 205 Q 142 218 160 220 Q 178 218 195 205 Q 178 210 160 209 Q 142 210 125 205 Z" fill="#D47870"/>
+                <!-- Lip highlight -->
+                <ellipse cx="160" cy="215" rx="18" ry="4" fill="#E89888" opacity="0.5"/>
+                <!-- Mouth line -->
+                <path id="mouth-path" d="M 125 205 Q 162 213 195 205" stroke="#A05040" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+              </g>
+
+              <!-- CHIN DEFINITION -->
+              <path d="M 140 255 Q 160 265 180 255" stroke="#C4784A" stroke-width="1.5" fill="none" opacity="0.3"/>
+
+              <!-- BINDI (forehead dot) - traditional touch -->
+              <circle cx="160" cy="98" r="5" fill="#CC2222" opacity="0.85"/>
+              <circle cx="160" cy="98" r="3" fill="#FF4444" opacity="0.6"/>
+
+            </g>
+          </svg>
+        </div>
+        <!-- Status -->
+        <div class="orb-status">
+          <div class="status-indicator"></div>
+          <span class="status-text" id="statusText">Ready to help</span>
+          <div class="speaking-wave">
+            <span></span><span></span><span></span><span></span><span></span>
+          </div>
+        </div>
+      </div>
+
+      <div class="avatar-name" id="avatarName">Swagata</div>
+      <div class="avatar-tagline" id="avatarTagline">Your AI Reception Assistant</div>
+
+      <div class="stats-row">
+        <div class="stat-card">
+          <div class="val" id="statQueries">0</div>
+          <div class="lbl">Queries Today</div>
+        </div>
+        <div class="stat-card">
+          <div class="val" id="statKB">0</div>
+          <div class="lbl">KB Entries</div>
+        </div>
+        <div class="stat-card">
+          <div class="val" id="statAcc">—</div>
+          <div class="lbl">Accuracy</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- CENTER: CONVERSATION -->
+    <div class="convo-panel">
+      <div class="panel-card" style="flex:1">
+        <div class="panel-header">
+          <div class="panel-title">
+            <span class="panel-icon">💬</span>
+            <span id="convoTitle">Live Conversation</span>
+          </div>
+          <div class="ai-fallback-badge" id="fallbackBadge" style="display:none">
+            ✦ AI Assist active
+          </div>
+        </div>
+        <div class="convo-feed" id="convoFeed">
+          <!-- Messages injected here -->
+        </div>
+        <div style="padding: 0 20px;">
+          <div class="typing-indicator" id="typingIndicator">
+            <span></span><span></span><span></span>
+          </div>
+        </div>
+        <div class="input-zone">
+          <div class="input-row">
+            <button class="btn-voice" id="voiceBtn" onclick="toggleListen()" title="Speak your question">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
+                <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+                <line x1="12" y1="19" x2="12" y2="23"/>
+                <line x1="8" y1="23" x2="16" y2="23"/>
+              </svg>
+            </button>
+            <input class="text-input" id="visitorInput" placeholder="Type or speak your question..." 
+                   onkeydown="if(event.key==='Enter') sendVisitorQuery()"/>
+            <button class="btn btn-primary" onclick="sendVisitorQuery()">
+              Ask ↗
+            </button>
+          </div>
+          <div class="input-hints" id="hintChips">
+            <div class="hint-chip" onclick="useHint(this)">What are the timings?</div>
+            <div class="hint-chip" onclick="useHint(this)">ଟିକେଟ୍ ଦର?</div>
+            <div class="hint-chip" onclick="useHint(this)">कहाँ से टिकट मिलेगा?</div>
+            <div class="hint-chip" onclick="useHint(this)">Contact number?</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT: TRAINING -->
+    <div class="training-panel">
+      <div class="panel-card">
+        <div class="tab-bar">
+          <button class="tab-btn active" onclick="switchTab('train',this)">Train</button>
+          <button class="tab-btn" onclick="switchTab('kb',this)">Knowledge Base</button>
+          <button class="tab-btn" onclick="switchTab('suggestions',this)">Suggestions</button>
+        </div>
+
+        <!-- Train Tab -->
+        <div id="tab-train">
+          <div class="train-form">
+            <div class="field-group">
+              <div class="field-label">Question / Visitor Query</div>
+              <textarea class="train-input" id="trainQ" rows="2" placeholder="e.g. What time does the museum open?"></textarea>
+            </div>
+            <div class="field-group">
+              <div class="field-label">Answer to Teach</div>
+              <textarea class="train-input" id="trainA" rows="3" placeholder="e.g. The museum opens at 9 AM and closes at 5 PM, Tuesday to Sunday."></textarea>
+            </div>
+            <div class="field-group">
+              <div class="field-label">Language</div>
+              <select class="train-input" id="trainLang" style="height:38px">
+                <option value="or">Odia (ଓଡ଼ିଆ)</option>
+                <option value="hi">Hindi (हिन्दी)</option>
+                <option value="en">English</option>
+              </select>
+            </div>
+            <div style="display:flex; gap:8px;">
+              <button class="btn btn-saffron" onclick="trainEntry()" style="flex:1">+ Add to Knowledge Base</button>
+              <button class="btn-voice" onclick="trainByVoice()" style="width:44px;height:38px;border-radius:10px" title="Dictate answer">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
+                  <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+                </svg>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- KB Tab -->
+        <div id="tab-kb" style="display:none">
+          <div class="trained-list" id="kbList">
+            <!-- KB entries -->
+          </div>
+          <div class="kb-row">
+            <span>Total entries: <span class="kb-count" id="kbCountLabel">0</span></span>
+            <span style="cursor:pointer;color:var(--danger);font-size:11px" onclick="clearKB()">Clear All</span>
+          </div>
+        </div>
+
+        <!-- Suggestions Tab -->
+        <div id="tab-suggestions" style="display:none">
+          <div class="suggestions-list" id="suggestionsList">
+            <!-- unanswered queries -->
+          </div>
+          <div class="kb-row">
+            <span style="font-size:11px">Unanswered queries logged for training</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Business info card -->
+      <div class="panel-card">
+        <div class="panel-header">
+          <div class="panel-title"><span class="panel-icon">🏢</span> Business Profile</div>
+        </div>
+        <div style="padding:14px 16px; display:flex; flex-direction:column; gap:10px;">
+          <div class="field-group">
+            <div class="field-label">Business Name</div>
+            <input class="train-input" id="bizName" value="Odisha State Museum, Bhubaneswar" style="height:36px"/>
+          </div>
+          <div class="field-group">
+            <div class="field-label">Type</div>
+            <select class="train-input" id="bizType" style="height:36px">
+              <option>Heritage Site / Museum</option>
+              <option>Hospital / Health Centre</option>
+              <option>Handicraft Showroom</option>
+              <option>Gram Panchayat Office</option>
+              <option>Hotel / Lodge</option>
+              <option>Government Office</option>
+              <option>Other</option>
+            </select>
+          </div>
+          <button class="btn btn-primary" onclick="saveProfile()" style="justify-content:center">
+            Save Profile
+          </button>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /main-content -->
+
+  <!-- FOOTER -->
+  <footer>
+    <div class="footer-brand">
+      <span>SwagatAI v1.0</span>
+      <span>·</span>
+      <span class="odisha-pride">Made for Odisha</span>
+    </div>
+    <span>Offline-capable · Odia · Hindi · English</span>
+    <div class="powered-by">
+      <span>Python Backend · Lightweight AI · No high-speed internet needed</span>
+    </div>
+  </footer>
+
+</div><!-- /app-shell -->
+
+<script>
+// ─── STATE ───────────────────────────────────────────
+let lang = 'or';
+let mode = 'visitor'; // 'visitor' | 'owner'
+let isSpeaking = false;
+let queryCount = 0;
+let accurateCount = 0;
+let knowledgeBase = []; // {q, a, lang}
+let unanswered = []; // suggested training items
+let currentTab = 'train';
+
+const labels = {
+  or: {
+    greeting: "ନମସ୍କାର! ମୁଁ ସ୍ୱଗତ। ଆପଣଙ୍କୁ କିପରି ସାହାଯ୍ୟ କରିପାରିବି?",
+    placeholder: "ଆପଣଙ୍କ ପ୍ରଶ୍ନ ଟାଇପ୍ କରନ୍ତୁ...",
+    askBtn: "ପଚାର ↗",
+    thinking: "ଭାବୁଛି...",
+    notFound: "ମୁଁ ଏହା ଶିଖି ନାହିଁ। ମୋ AI ସହାୟକ ଉତ୍ତର ଦେଉଛି।",
+    listening: "ଶୁଣୁଛି...",
+    tagline: "ଆପଣଙ୍କ AI ଗ୍ରାହକ ସେବା ସହାୟକ",
+  },
+  hi: {
+    greeting: "नमस्कार! मैं स्वागता हूँ। मैं आपकी कैसे मदद कर सकती हूँ?",
+    placeholder: "अपना प्रश्न टाइप करें...",
+    askBtn: "पूछें ↗",
+    thinking: "सोच रही हूँ...",
+    notFound: "यह मुझे नहीं पता। AI सहायक से उत्तर ले रही हूँ।",
+    listening: "सुन रही हूँ...",
+    tagline: "आपकी AI रिसेप्शन सहायक",
+  },
+  en: {
+    greeting: "Namaskara! I'm Swagata, your AI reception assistant. How may I help you today?",
+    placeholder: "Type or speak your question...",
+    askBtn: "Ask ↗",
+    thinking: "Thinking...",
+    notFound: "I don't have that information yet. Let me fetch an answer using AI.",
+    listening: "Listening...",
+    tagline: "Your AI Reception Assistant",
+  }
+};
+
+// ─── SAMPLE KB DATA ───────────────────────────────────
+const sampleKB = [
+  {q: "What are the museum timings?", a: "The museum is open Tuesday to Sunday, 10 AM to 5 PM. Closed on Mondays and national holidays.", lang: "en"},
+  {q: "ଟିକେଟ୍ ମୂଲ୍ୟ କେତେ?", a: "ଭାରତୀୟ ଦର୍ଶକଙ୍କ ପାଇଁ ୨୦ ଟଙ୍କା ଏବଂ ବିଦେଶୀ ଦର୍ଶକଙ୍କ ପାଇଁ ୨୦୦ ଟଙ୍କା।", lang: "or"},
+  {q: "पार्किंग की सुविधा है क्या?", a: "हाँ, म्यूज़ियम के पास निःशुल्क पार्किंग उपलब्ध है।", lang: "hi"},
+];
+knowledgeBase = [...sampleKB];
+
+const sampleUnanswered = [
+  "Is photography allowed inside?",
+  "ଗ୍ୟାଲେରୀ ନଂ ୩ କୁ କିପରି ଯିବ?",
+  "क्या यहाँ कैफेटेरिया है?",
+];
+unanswered = [...sampleUnanswered];
+
+// ─── INIT ──────────────────────────────────────────────
+window.onload = () => {
+  renderKB();
+  renderSuggestions();
+  updateStats();
+  setTimeout(() => {
+    addMessage('ai', labels[lang].greeting, 'Swagata');
+    triggerSpeak(labels[lang].greeting);
+  }, 800);
+};
+
+// ─── LANGUAGE SWITCH ──────────────────────────────────
+function setLang(l) {
+  lang = l;
+  document.querySelectorAll('.lang-btn').forEach(b => b.classList.remove('active'));
+  document.querySelector(`.lang-btn[onclick="setLang('${l}')"]`).classList.add('active');
+  document.getElementById('visitorInput').placeholder = labels[l].placeholder;
+  document.getElementById('avatarTagline').textContent = labels[l].tagline;
+  updateHints(l);
+}
+
+function updateHints(l) {
+  const hints = {
+    or: ["ସମୟ କ'ଣ?", "ଟିକେଟ୍ ଦର?", "ଶୌଚାଳୟ କୁଆଡ଼େ?", "ପ୍ରବେଶ ନିୟମ?"],
+    hi: ["खुलने का समय?", "टिकट कितने का?", "वॉशरूम कहाँ है?", "नियम क्या हैं?"],
+    en: ["What are the timings?", "Ticket price?", "Where is the restroom?", "Contact number?"]
+  };
+  const c = document.getElementById('hintChips');
+  c.innerHTML = hints[l].map(h => `<div class="hint-chip" onclick="useHint(this)">${h}</div>`).join('');
+}
+
+// ─── MODE TOGGLE ──────────────────────────────────────
+function toggleMode() {
+  mode = mode === 'visitor' ? 'owner' : 'visitor';
+  document.getElementById('modeLabel').textContent = mode === 'visitor' ? 'Visitor Mode' : 'Owner Mode';
+  showToast(mode === 'owner' ? 'Owner / Training Mode Active' : 'Visitor Mode Active', 'info');
+}
+
+// ─── MESSAGING ───────────────────────────────────────
+function addMessage(role, text, name) {
+  const feed = document.getElementById('convoFeed');
+  const now = new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
+  const div = document.createElement('div');
+  div.className = `msg ${role}`;
+  div.innerHTML = `
+    <div class="msg-avatar ${role === 'ai' ? 'ai-av' : 'visitor-av'}">${role === 'ai' ? 'SW' : 'V'}</div>
+    <div>
+      <div class="msg-bubble">${text}</div>
+      <div class="msg-meta">${name || (role==='ai' ? 'Swagata' : 'Visitor')} · ${now}</div>
+    </div>`;
+  feed.appendChild(div);
+  feed.scrollTop = feed.scrollHeight;
+}
+
+function showTyping(show) {
+  document.getElementById('typingIndicator').style.display = show ? 'flex' : 'none';
+}
+
+// ─── QUERY HANDLER ───────────────────────────────────
+function sendVisitorQuery() {
+  const input = document.getElementById('visitorInput');
+  const q = input.value.trim();
+  if (!q) return;
+  input.value = '';
+  addMessage('visitor', q, 'Visitor');
+  queryCount++;
+  updateStats();
+  showTyping(true);
+
+  setTimeout(() => {
+    showTyping(false);
+    const answer = lookupKB(q);
+    if (answer) {
+      addMessage('ai', answer, 'Swagata');
+      document.getElementById('fallbackBadge').style.display = 'none';
+      accurateCount++;
+      triggerSpeak(answer);
+    } else {
+      // Fallback to AI
+      document.getElementById('fallbackBadge').style.display = 'flex';
+      const fallbackReply = getFallbackAnswer(q);
+      addMessage('ai', fallbackReply, 'Swagata · AI Assist');
+      if (!unanswered.includes(q)) {
+        unanswered.unshift(q);
+        renderSuggestions();
+        showToast('New training suggestion logged!', 'info');
+      }
+      triggerSpeak(fallbackReply);
+    }
+    updateStats();
+  }, 1200 + Math.random() * 600);
+}
+
+function lookupKB(query) {
+  const qLow = query.toLowerCase().replace(/[?।]/g, '');
+  for (const entry of knowledgeBase) {
+    const entryQ = entry.q.toLowerCase().replace(/[?।]/g, '');
+    const words = qLow.split(' ').filter(w => w.length > 2);
+    const matches = words.filter(w => entryQ.includes(w)).length;
+    if (matches >= 2 || entryQ.includes(qLow) || qLow.includes(entryQ.substring(0,8))) {
+      return entry.a;
+    }
+  }
+  return null;
+}
+
+function getFallbackAnswer(q) {
+  const q2 = q.toLowerCase();
+  const responses = {
+    en: [
+      "Based on general information, I'd recommend contacting our staff directly for this. Our office number is displayed at the entrance.",
+      "That's a great question! I'm still learning. Our team will be happy to assist you with this query.",
+      "I don't have specific details on that yet, but our information desk can help you with this right away.",
+    ],
+    hi: [
+      "इस बारे में मुझे पूरी जानकारी नहीं है। कृपया हमारे स्टाफ से संपर्क करें।",
+      "यह एक अच्छा प्रश्न है! मैं अभी भी सीख रही हूँ। कृपया रिसेप्शन पर जाएं।",
+    ],
+    or: [
+      "ଏ ବିଷୟରେ ମୋ ପାଖରେ ସୂଚନା ନାହିଁ। ଆମ ସ୍ଟାଫଙ୍କ ସହ ଯୋଗାଯୋଗ କରନ୍ତୁ।",
+      "ଏହି ପ୍ରଶ୍ନ ପାଇଁ ଆମ ରିସେପ୍ସନ ଡେସ୍କ ଆପଣଙ୍କୁ ସାହାଯ୍ୟ କରିବ।",
+    ]
+  };
+  const pool = responses[lang] || responses['en'];
+  return pool[Math.floor(Math.random() * pool.length)];
+}
+
+// ─── TRAINING ────────────────────────────────────────
+function trainEntry() {
+  const q = document.getElementById('trainQ').value.trim();
+  const a = document.getElementById('trainA').value.trim();
+  const l = document.getElementById('trainLang').value;
+  if (!q || !a) { showToast('Please fill both question and answer.', 'info'); return; }
+  knowledgeBase.unshift({q, a, lang: l});
+  document.getElementById('trainQ').value = '';
+  document.getElementById('trainA').value = '';
+  renderKB();
+  updateStats();
+  showToast('✓ Added to Knowledge Base!', 'success');
+}
+
+function trainByVoice() {
+  showToast('Voice training: speak the answer after the beep.', 'info');
+}
+
+function clearKB() {
+  if (!confirm('Clear all knowledge base entries?')) return;
+  knowledgeBase = [];
+  renderKB();
+  updateStats();
+}
+
+// ─── RENDER KB ───────────────────────────────────────
+function renderKB() {
+  const list = document.getElementById('kbList');
+  if (knowledgeBase.length === 0) {
+    list.innerHTML = '<div style="color:var(--muted);font-size:12px;padding:8px">No entries yet. Add some above!</div>';
+  } else {
+    list.innerHTML = knowledgeBase.map((e,i) => `
+      <div class="trained-item" title="${e.a}">
+        <span style="flex:1"><strong style="color:#E0EAF8">${e.q}</strong><br><span style="color:var(--muted);font-size:11px">${e.lang.toUpperCase()} · ${e.a.substring(0,50)}${e.a.length>50?'…':''}</span></span>
+        <span onclick="removeKB(${i})" style="cursor:pointer;color:var(--muted);font-size:14px;flex-shrink:0">✕</span>
+      </div>`).join('');
+  }
+  document.getElementById('kbCountLabel').textContent = knowledgeBase.length;
+}
+
+function removeKB(i) {
+  knowledgeBase.splice(i, 1);
+  renderKB();
+  updateStats();
+}
+
+function renderSuggestions() {
+  const list = document.getElementById('suggestionsList');
+  if (unanswered.length === 0) {
+    list.innerHTML = '<div style="color:var(--muted);font-size:12px;padding:8px">No unanswered queries yet.</div>';
+    return;
+  }
+  list.innerHTML = unanswered.map((q,i) => `
+    <div class="suggestion-item" onclick="useSuggestion('${q.replace(/'/g,"\\'")}')">
+      <span class="suggestion-q">${q}</span>
+      <span class="suggestion-badge">Train →</span>
+    </div>`).join('');
+}
+
+function useSuggestion(q) {
+  switchTab('train', document.querySelector('.tab-btn'));
+  document.getElementById('trainQ').value = q;
+  document.getElementById('trainA').focus();
+  showToast('Fill in the answer to train Swagata!', 'info');
+}
+
+// ─── TABS ────────────────────────────────────────────
+function switchTab(tab, btn) {
+  currentTab = tab;
+  ['train','kb','suggestions'].forEach(t => {
+    document.getElementById(`tab-${t}`).style.display = t === tab ? 'block' : 'none';
+  });
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  else document.querySelectorAll('.tab-btn')[['train','kb','suggestions'].indexOf(tab)].classList.add('active');
+}
+
+// ─── SPEAKING ANIMATION ──────────────────────────────
+function triggerSpeak(text) {
+  const shell = document.getElementById('appShell');
+  const face = document.getElementById('face');
+  shell.classList.add('speaking');
+  face.classList.add('speaking');
+  document.getElementById('statusText').textContent = 'Speaking...';
+
+  const duration = Math.max(1500, text.length * 55);
+  
+  // Web Speech API (if available)
+  if ('speechSynthesis' in window) {
+    const utter = new SpeechSynthesisUtterance(text);
+    utter.lang = lang === 'or' ? 'or-IN' : lang === 'hi' ? 'hi-IN' : 'en-IN';
+    utter.rate = 0.9; utter.pitch = 1.1;
+    utter.onend = () => stopSpeaking();
+    window.speechSynthesis.cancel();
+    window.speechSynthesis.speak(utter);
+  } else {
+    setTimeout(stopSpeaking, duration);
+  }
+}
+
+function stopSpeaking() {
+  const shell = document.getElementById('appShell');
+  const face = document.getElementById('face');
+  shell.classList.remove('speaking');
+  face.classList.remove('speaking');
+  document.getElementById('statusText').textContent = labels[lang]?.greeting?.substring(0,14) + '...' || 'Ready to help';
+}
+
+// ─── VOICE INPUT ─────────────────────────────────────
+let recognition = null;
+
+function toggleListen() {
+  const overlay = document.getElementById('listenOverlay');
+  const btn = document.getElementById('voiceBtn');
+  overlay.classList.add('active');
+  btn.classList.add('listening');
+  document.getElementById('listenLang').textContent = labels[lang].listening;
+
+  if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    recognition = new SR();
+    recognition.lang = lang === 'or' ? 'or-IN' : lang === 'hi' ? 'hi-IN' : 'en-IN';
+    recognition.interimResults = false;
+    recognition.onresult = (e) => {
+      const transcript = e.results[0][0].transcript;
+      document.getElementById('visitorInput').value = transcript;
+      stopListening();
+      setTimeout(() => sendVisitorQuery(), 300);
+    };
+    recognition.onerror = stopListening;
+    recognition.onend = stopListening;
+    recognition.start();
+  } else {
+    // Simulate for demo
+    setTimeout(() => {
+      document.getElementById('visitorInput').value = lang === 'or' ? "ଟିକେଟ୍ ଦର କେତେ?" : lang === 'hi' ? "टिकट का दाम क्या है?" : "What are the ticket prices?";
+      stopListening();
+      setTimeout(() => sendVisitorQuery(), 300);
+    }, 2000);
+  }
+}
+
+function stopListening() {
+  if (recognition) { try { recognition.stop(); } catch(e){} recognition = null; }
+  document.getElementById('listenOverlay').classList.remove('active');
+  document.getElementById('voiceBtn').classList.remove('listening');
+}
+
+// ─── HINTS ───────────────────────────────────────────
+function useHint(el) {
+  document.getElementById('visitorInput').value = el.textContent;
+  document.getElementById('visitorInput').focus();
+}
+
+// ─── STATS ───────────────────────────────────────────
+function updateStats() {
+  document.getElementById('statQueries').textContent = queryCount;
+  document.getElementById('statKB').textContent = knowledgeBase.length;
+  const acc = queryCount > 0 ? Math.round((accurateCount / queryCount) * 100) + '%' : '—';
+  document.getElementById('statAcc').textContent = acc;
+}
+
+// ─── PROFILE ─────────────────────────────────────────
+function saveProfile() {
+  const name = document.getElementById('bizName').value;
+  showToast(`Profile saved: ${name}`, 'success');
+}
+
+// ─── TOAST ───────────────────────────────────────────
+function showToast(msg, type='info') {
+  const c = document.getElementById('toastContainer');
+  const t = document.createElement('div');
+  t.className = `toast ${type}`;
+  t.textContent = msg;
+  c.appendChild(t);
+  setTimeout(() => { t.style.opacity = '0'; t.style.transform = 'translateX(20px)'; t.style.transition = 'all 0.3s'; setTimeout(() => t.remove(), 300); }, 3000);
+}
+
+// ─── KEYBOARD SHORTCUT ───────────────────────────────
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') stopListening();
+  if ((e.ctrlKey || e.metaKey) && e.key === 'm') { e.preventDefault(); toggleListen(); }
+});
+</script>
+</body>
+</html>
