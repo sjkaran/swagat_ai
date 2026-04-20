@@ -4,14 +4,18 @@ import sqlite3
 import os
 
 app = Flask(__name__)
-CORS(app)  # Allows your HTML file to talk to this server
+CORS(app)
 
-DB_NAME = "swagat_ai.db"
+# --- THE FIX: Force DB to save in the exact same folder as app.py ---
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+DB_NAME = os.path.join(BASE_DIR, "swagat_ai.db")
+# --------------------------------------------------------------------
 
 # ==========================================
 # 1. DATABASE INITIALIZATION
 # ==========================================
 def init_db():
+# ... rest of your code stays the same
     conn = sqlite3.connect(DB_NAME)
     cursor = conn.cursor()
     
