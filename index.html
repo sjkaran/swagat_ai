@@ -148,6 +148,15 @@
     align-items: start;
   }
 
+  /* Owner / Visitor Mode Layout */
+  .app-shell.visitor-mode .main-content {
+    grid-template-columns: 340px minmax(300px, 800px);
+    justify-content: center;
+  }
+  .app-shell.visitor-mode .training-panel {
+    display: none;
+  }
+
   /* ─── LEFT PANEL: AVATAR ─── */
   .avatar-panel {
     display: flex; flex-direction: column; align-items: center; gap: 20px;
@@ -694,7 +703,7 @@
 <!-- Toast -->
 <div class="toast-container" id="toastContainer"></div>
 
-<div class="app-shell" id="appShell">
+<div class="app-shell visitor-mode" id="appShell">
 
   <!-- HEADER -->
   <header>
@@ -1160,9 +1169,26 @@ function updateHints(l) {
 
 // ─── MODE TOGGLE ──────────────────────────────────────
 function toggleMode() {
-  mode = mode === 'visitor' ? 'owner' : 'visitor';
-  document.getElementById('modeLabel').textContent = mode === 'visitor' ? 'Visitor Mode' : 'Owner Mode';
-  showToast(mode === 'owner' ? 'Owner / Training Mode Active' : 'Visitor Mode Active', 'info');
+  if (mode === 'visitor') {
+    // Ask for password when trying to enter Owner Mode
+    const pass = prompt("Enter Admin Password:");
+    
+    if (pass === "swagat123") {
+      mode = 'owner';
+      document.getElementById('modeLabel').textContent = 'Owner Mode';
+      document.getElementById('appShell').classList.remove('visitor-mode');
+      showToast('Owner Mode Unlocked', 'success');
+    } else if (pass !== null) {
+      // If they typed something wrong (and didn't just hit cancel)
+      showToast('Incorrect password!', 'danger');
+    }
+  } else {
+    // Switch back to Visitor Mode instantly (no password needed to lock it)
+    mode = 'visitor';
+    document.getElementById('modeLabel').textContent = 'Visitor Mode';
+    document.getElementById('appShell').classList.add('visitor-mode');
+    showToast('Visitor Mode Active (Locked)', 'info');
+  }
 }
 
 // ─── MESSAGING ───────────────────────────────────────
