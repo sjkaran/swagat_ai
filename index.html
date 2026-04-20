@@ -1268,8 +1268,62 @@ function trainEntry() {
   showToast('✓ Added to Knowledge Base!', 'success');
 }
 
+let trainRecognition = null;ś
+
 function trainByVoice() {
-  showToast('Voice training: speak the answer after the beep.', 'info');
+  // Find the button to add the pulsing animation
+  const btn = document.querySelector('.train-form .btn-voice');
+  
+  // If it's already recording, clicking it again will stop it
+  if (btn && btn.classList.contains('listening')) {
+    stopTrainListen(btn);
+    return;
+  }
+
+  const selectedLang = document.getElementById('trainLang').value;
+  if (btn) btn.classList.add('listening');
+  showToast('Listening... Speak the answer now.', 'info'); // Note: No beep! Just speak.
+
+  // Check if browser supports Speech Recognition (Chrome/Edge)
+  if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    trainRecognition = new SR();
+    
+    // Set language based on the dropdown
+    trainRecognition.lang = selectedLang === 'or' ? 'or-IN' : selectedLang === 'hi' ? 'hi-IN' : 'en-IN';
+    trainRecognition.interimResults = false;
+    
+    // When you stop speaking, it drops the text into the Answer box
+    trainRecognition.onresult = (e) => {
+      const transcript = e.results[0][0].transcript;
+      document.getElementById('trainA').value = transcript;
+      stopTrainListen(btn);
+      showToast('Voice captured!', 'success');
+    };
+    
+    trainRecognition.onerror = (e) => {
+      console.error("Mic error: ", e.error);
+      showToast('Mic error: ' + e.error, 'danger');
+      stopTrainListen(btn);
+    };
+    
+    trainRecognition.onend = () => { 
+      stopTrainListen(btn); 
+    };
+    
+    trainRecognition.start();
+  } else {
+    showToast('Speech recognition not supported in this browser. Use Chrome.', 'danger');
+    stopTrainListen(btn);
+  }
+}
+
+function stopTrainListen(btn) {
+  if (trainRecognition) { 
+    try { trainRecognition.stop(); } catch(e){} 
+    trainRecognition = null; 
+  }
+  if (btn) btn.classList.remove('listening');
 }
 
 function clearKB() {
