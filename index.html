@@ -148,6 +148,15 @@
     align-items: start;
   }
 
+  /* Owner / Visitor Mode Layout */
+  .app-shell.visitor-mode .main-content {
+    grid-template-columns: 340px minmax(300px, 800px);
+    justify-content: center;
+  }
+  .app-shell.visitor-mode .training-panel {
+    display: none;
+  }
+
   /* ─── LEFT PANEL: AVATAR ─── */
   .avatar-panel {
     display: flex; flex-direction: column; align-items: center; gap: 20px;
@@ -688,13 +697,13 @@
   <div class="listen-ripple">🎤</div>
   <div class="listen-text" id="listenLang">Listening...</div>
   <div class="listen-sub">Speak in Odia, Hindi, or English</div>
-  <div class="listen-cancel" onclick="stopListening()">Cancel</div>
+  <div class="listen-cancel" onclick="stopListening(true)">Cancel</div>
 </div>
 
 <!-- Toast -->
 <div class="toast-container" id="toastContainer"></div>
 
-<div class="app-shell" id="appShell">
+<div class="app-shell visitor-mode" id="appShell">
 
   <!-- HEADER -->
   <header>
@@ -707,9 +716,9 @@
     </div>
     <div class="header-controls">
       <div class="lang-pill">
-        <button class="lang-btn active" onclick="setLang('or')">ଓଡ଼ିଆ</button>
+        <button class="lang-btn" onclick="setLang('or')">ଓଡ଼ିଆ</button>
         <button class="lang-btn" onclick="setLang('hi')">हिन्दी</button>
-        <button class="lang-btn" onclick="setLang('en')">English</button>
+        <button class="lang-btn active" onclick="setLang('en')">English</button>
       </div>
       <div class="mode-toggle" onclick="toggleMode()">
         <div class="mode-dot"></div>
@@ -1073,7 +1082,7 @@
 
 <script>
 // ─── STATE ───────────────────────────────────────────
-let lang = 'or';
+let lang = 'en';
 let mode = 'visitor'; // 'visitor' | 'owner'
 let isSpeaking = false;
 let queryCount = 0;
@@ -1093,7 +1102,7 @@ const labels = {
     tagline: "ଆପଣଙ୍କ AI ଗ୍ରାହକ ସେବା ସହାୟକ",
   },
   hi: {
-    greeting: "नमस्कार! मैं स्वागता हूँ। मैं आपकी कैसे मदद कर सकती हूँ?",
+    greeting: "नमस्कार! मैं स्वागत हूँ। मैं आपकी कैसे मदद कर सकता हूँ?",
     placeholder: "अपना प्रश्न टाइप करें...",
     askBtn: "पूछें ↗",
     thinking: "सोच रही हूँ...",
@@ -1102,7 +1111,7 @@ const labels = {
     tagline: "आपकी AI रिसेप्शन सहायक",
   },
   en: {
-    greeting: "Namaskara! I'm Swagata, your AI reception assistant. How may I help you today?",
+    greeting: "Namaskara! I'm Swagat, your A I reception assistant. How may I help you today?",
     placeholder: "Type or speak your question...",
     askBtn: "Ask ↗",
     thinking: "Thinking...",
@@ -1160,9 +1169,26 @@ function updateHints(l) {
 
 // ─── MODE TOGGLE ──────────────────────────────────────
 function toggleMode() {
-  mode = mode === 'visitor' ? 'owner' : 'visitor';
-  document.getElementById('modeLabel').textContent = mode === 'visitor' ? 'Visitor Mode' : 'Owner Mode';
-  showToast(mode === 'owner' ? 'Owner / Training Mode Active' : 'Visitor Mode Active', 'info');
+  if (mode === 'visitor') {
+    // Ask for password when trying to enter Owner Mode
+    const pass = prompt("Enter Admin Password:");
+    
+    if (pass === "swagat123") {
+      mode = 'owner';
+      document.getElementById('modeLabel').textContent = 'Owner Mode';
+      document.getElementById('appShell').classList.remove('visitor-mode');
+      showToast('Owner Mode Unlocked', 'success');
+    } else if (pass !== null) {
+      // If they typed something wrong (and didn't just hit cancel)
+      showToast('Incorrect password!', 'danger');
+    }
+  } else {
+    // Switch back to Visitor Mode instantly (no password needed to lock it)
+    mode = 'visitor';
+    document.getElementById('modeLabel').textContent = 'Visitor Mode';
+    document.getElementById('appShell').classList.add('visitor-mode');
+    showToast('Visitor Mode Active (Locked)', 'info');
+  }
 }
 
 // ─── MESSAGING ───────────────────────────────────────
@@ -1268,8 +1294,62 @@ function trainEntry() {
   showToast('✓ Added to Knowledge Base!', 'success');
 }
 
+let trainRecognition = null;ś
+
 function trainByVoice() {
-  showToast('Voice training: speak the answer after the beep.', 'info');
+  // Find the button to add the pulsing animation
+  const btn = document.querySelector('.train-form .btn-voice');
+  
+  // If it's already recording, clicking it again will stop it
+  if (btn && btn.classList.contains('listening')) {
+    stopTrainListen(btn);
+    return;
+  }
+
+  const selectedLang = document.getElementById('trainLang').value;
+  if (btn) btn.classList.add('listening');
+  showToast('Listening... Speak the answer now.', 'info'); // Note: No beep! Just speak.
+
+  // Check if browser supports Speech Recognition (Chrome/Edge)
+  if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    trainRecognition = new SR();
+    
+    // Set language based on the dropdown
+    trainRecognition.lang = selectedLang === 'or' ? 'or-IN' : selectedLang === 'hi' ? 'hi-IN' : 'en-IN';
+    trainRecognition.interimResults = false;
+    
+    // When you stop speaking, it drops the text into the Answer box
+    trainRecognition.onresult = (e) => {
+      const transcript = e.results[0][0].transcript;
+      document.getElementById('trainA').value = transcript;
+      stopTrainListen(btn);
+      showToast('Voice captured!', 'success');
+    };
+    
+    trainRecognition.onerror = (e) => {
+      console.error("Mic error: ", e.error);
+      showToast('Mic error: ' + e.error, 'danger');
+      stopTrainListen(btn);
+    };
+    
+    trainRecognition.onend = () => { 
+      stopTrainListen(btn); 
+    };
+    
+    trainRecognition.start();
+  } else {
+    showToast('Speech recognition not supported in this browser. Use Chrome.', 'danger');
+    stopTrainListen(btn);
+  }
+}
+
+function stopTrainListen(btn) {
+  if (trainRecognition) { 
+    try { trainRecognition.stop(); } catch(e){} 
+    trainRecognition = null; 
+  }
+  if (btn) btn.classList.remove('listening');
 }
 
 function clearKB() {
@@ -1377,29 +1457,41 @@ function toggleListen() {
     recognition = new SR();
     recognition.lang = lang === 'or' ? 'or-IN' : lang === 'hi' ? 'hi-IN' : 'en-IN';
     recognition.interimResults = false;
+    
     recognition.onresult = (e) => {
       const transcript = e.results[0][0].transcript;
       document.getElementById('visitorInput').value = transcript;
-      stopListening();
+      stopListening(false); // Normal stop
       setTimeout(() => sendVisitorQuery(), 300);
     };
-    recognition.onerror = stopListening;
-    recognition.onend = stopListening;
+    
+    recognition.onerror = () => stopListening(true); // Abort on error
+    recognition.onend = () => stopListening(false);
     recognition.start();
   } else {
-    // Simulate for demo
     setTimeout(() => {
-      document.getElementById('visitorInput').value = lang === 'or' ? "ଟିକେଟ୍ ଦର କେତେ?" : lang === 'hi' ? "टिकट का दाम क्या है?" : "What are the ticket prices?";
-      stopListening();
-      setTimeout(() => sendVisitorQuery(), 300);
+      document.getElementById('visitorInput').value = "Please test in Chrome or Edge for voice recognition.";
+      stopListening(true);
     }, 2000);
   }
 }
 
-function stopListening() {
-  if (recognition) { try { recognition.stop(); } catch(e){} recognition = null; }
-  document.getElementById('listenOverlay').classList.remove('active');
-  document.getElementById('voiceBtn').classList.remove('listening');
+function stopListening(isCancel = false) {
+  if (recognition) { 
+    if (isCancel) {
+      recognition.onresult = null; // Prevent sending half-heard words
+      try { recognition.abort(); } catch(e){} // Kill instantly
+    } else {
+      try { recognition.stop(); } catch(e){} // Finish nicely
+    }
+    recognition = null; 
+  }
+  
+  const overlay = document.getElementById('listenOverlay');
+  if (overlay) overlay.classList.remove('active');
+  
+  const btn = document.getElementById('voiceBtn');
+  if (btn) btn.classList.remove('listening');
 }
 
 // ─── HINTS ───────────────────────────────────────────
@@ -1434,8 +1526,14 @@ function showToast(msg, type='info') {
 
 // ─── KEYBOARD SHORTCUT ───────────────────────────────
 document.addEventListener('keydown', e => {
-  if (e.key === 'Escape') stopListening();
-  if ((e.ctrlKey || e.metaKey) && e.key === 'm') { e.preventDefault(); toggleListen(); }
+  if (e.key === 'Escape') {
+    stopListening(true);
+    stopTrainListen(document.querySelector('.train-form .btn-voice'));
+  }
+  if ((e.ctrlKey || e.metaKey) && e.key === 'm') { 
+    e.preventDefault(); 
+    toggleListen(); 
+  }
 });
 </script>
 </body>
