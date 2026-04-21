@@ -642,6 +642,7 @@
   }
   .listen-text { color: white; font-size: 18px; font-weight: 500; }
   .listen-sub { color: var(--muted); font-size: 13px; }
+
   .listen-cancel {
     margin-top: 10px; padding: 10px 24px;
     background: rgba(255,255,255,0.08);
@@ -650,6 +651,15 @@
     font-size: 13px; transition: all 0.2s;
   }
   .listen-cancel:hover { background: rgba(255,255,255,0.14); }
+
+  .listen-submit {
+    padding: 10px 24px;
+    background: rgba(46, 204, 113, 0.2);
+    border: 1px solid var(--success);
+    border-radius: 30px; color: white; cursor: pointer;
+    font-size: 14px; font-weight: 600; transition: all 0.2s;
+  }
+  .listen-submit:hover { background: rgba(46, 204, 113, 0.35); }
 
   /* ─── TOAST ─── */
   .toast-container {
@@ -697,7 +707,10 @@
   <div class="listen-ripple">🎤</div>
   <div class="listen-text" id="listenLang">Listening...</div>
   <div class="listen-sub">Speak in Odia, Hindi, or English</div>
-  <div class="listen-cancel" onclick="stopListening(true)">Cancel</div>
+  <div style="display: flex; gap: 12px; margin-top: 15px;">
+    <div class="listen-submit" id="listenSubmitBtn" onclick="stopOdiaAndProcess()" style="display: none;">ସମାପ୍ତ କରନ୍ତୁ (Finish)</div>
+    <div class="listen-cancel" id="listenCancelBtn">Cancel</div>
+  </div>
 </div>
 
 <!-- Toast -->
@@ -1369,41 +1382,38 @@ function stopSpeaking() {
 
 // ─── VOICE INPUT (STT LOGIC) ─────────────────────────
 let recognition = null;
-let odiaAudioContext = null;
-let odiaMediaStream = null;
-let odiaProcessor = null;
-let pcmData = [];
+let isOdiaBackendRecording = false; // Tracks global Odia mic state
 
-async function toggleListen() {
+function toggleListen() {
   const overlay = document.getElementById('listenOverlay');
   const btn = document.getElementById('voiceBtn');
+  const submitBtn = document.getElementById('listenSubmitBtn');
+
   overlay.classList.add('active');
-  btn.classList.add('listening');
+  if (btn) btn.classList.add('listening');
 
   if (lang === 'or') {
-    document.getElementById('listenLang').textContent = "Listening to Odia...";
-    try {
-      odiaMediaStream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const AudioCtx = window.AudioContext || window.webkitAudioContext;
-      odiaAudioContext = new AudioCtx({ sampleRate: 16000 });
-      
-      const source = odiaAudioContext.createMediaStreamSource(odiaMediaStream);
-      odiaProcessor = odiaAudioContext.createScriptProcessor(4096, 1, 1);
-      pcmData = [];
-      
-      odiaProcessor.onaudioprocess = (e) => {
-          pcmData.push(new Float32Array(e.inputBuffer.getChannelData(0)));
-      };
-      
-      source.connect(odiaProcessor);
-      odiaProcessor.connect(odiaAudioContext.destination);
-    } catch (err) {
-      console.error("Mic Access Error:", err);
-      showToast("Mic permission denied or unavailable.", "danger");
-      stopListening(true);
+    // ---------------------------------------------------
+    // ODIA LOGIC: Start hardware recording and show Finish button
+    // ---------------------------------------------------
+    if (!isOdiaBackendRecording) {
+        document.getElementById('listenLang').textContent = "ମୁଁ ଶୁଣୁଛି...";
+        submitBtn.style.display = 'block'; // Show the Finish button
+        
+        isOdiaBackendRecording = true;
+        fetch('/api/listen/odia/start', { method: 'POST' })
+            .catch(() => {
+                showToast("Failed to start hardware mic.", "danger");
+                stopListening(true);
+            });
     }
   } else {
+    // ---------------------------------------------------
+    // ENGLISH/HINDI LOGIC: Standard Browser STT
+    // ---------------------------------------------------
     document.getElementById('listenLang').textContent = labels[lang].listening;
+    submitBtn.style.display = 'none'; // Hide Finish button (Browser auto-stops)
+    
     if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
       const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
       recognition = new SR();
@@ -1415,138 +1425,142 @@ async function toggleListen() {
         stopListening(false);
         setTimeout(() => sendVisitorQuery(), 300);
       };
-      
       recognition.onerror = (e) => {
-        console.error("Browser STT Error:", e.error);
         if(e.error !== 'aborted') showToast("Mic error: " + e.error, "danger");
         stopListening(true);
       };
-      recognition.onend = () => { stopListening(true); };
-      
+      recognition.onend = () => stopListening(true);
       try { recognition.start(); } catch(e) { stopListening(true); }
-    } else {
-      showToast("Speech Recognition unsupported in this browser.", "danger");
-      stopListening(true);
     }
   }
 }
 
+// ---------------------------------------------------
+// NEW FUNCTION: Triggered when the user clicks "ସମାପ୍ତ କରନ୍ତୁ"
+// ---------------------------------------------------
+function stopOdiaAndProcess() {
+    if (!isOdiaBackendRecording) return;
+    
+    document.getElementById('listenLang').textContent = "Processing AI...";
+    document.getElementById('listenSubmitBtn').style.display = 'none'; // Hide to prevent double-clicks
+    
+    fetch('/api/listen/odia/stop', { method: 'POST' })
+        .then(res => res.json())
+        .then(data => {
+            if (data.text) {
+                document.getElementById('visitorInput').value = data.text;
+                setTimeout(() => sendVisitorQuery(), 300);
+            } else {
+                showToast("Didn't catch that clearly.", "info");
+            }
+            stopListening(false); // Clean up UI
+        })
+        .catch(() => {
+            showToast("Backend AI Error.", "danger");
+            stopListening(true);
+        });
+}
+
 function stopListening(forceCancel = false) {
-  // 1. FORCE THE UI TO CLOSE INSTANTLY (Prevents getting stuck)
   const overlay = document.getElementById('listenOverlay');
   if (overlay) overlay.classList.remove('active');
   const btn = document.getElementById('voiceBtn');
   if (btn) btn.classList.remove('listening');
+  
+  // Always hide the Odia submit button on close
+  document.getElementById('listenSubmitBtn').style.display = 'none';
 
-  // 2. Kill Browser STT (English/Hindi)
+  // Handle Browser STT Cleanup
   if (recognition) {
-    recognition.onend = null; 
-    recognition.onerror = null;
-    if (forceCancel === true) {
-      try { recognition.abort(); } catch(e){}
-    } else {
-      try { recognition.stop(); } catch(e){}
-    }
+    recognition.onend = null; recognition.onerror = null;
+    if (forceCancel) try { recognition.abort(); } catch(e){}
+    else try { recognition.stop(); } catch(e){}
     recognition = null; 
   }
   
-  // 3. Kill Odia Audio Capture
-  if (odiaProcessor || odiaMediaStream) {
-      try { if (odiaProcessor) odiaProcessor.disconnect(); } catch(e){}
-      try { if (odiaMediaStream) odiaMediaStream.getTracks().forEach(t => t.stop()); } catch(e){}
-      
-      // If it wasn't a cancel, send the data to Python!
-      if (forceCancel !== true && pcmData.length > 0) {
-          let length = pcmData.reduce((acc, val) => acc + val.length, 0);
-          let flatData = new Float32Array(length);
-          let offset = 0;
-          for (let block of pcmData) {
-              flatData.set(block, offset);
-              offset += block.length;
-          }
-          const buffer = new ArrayBuffer(flatData.length * 2);
-          const view = new DataView(buffer);
-          for (let i = 0; i < flatData.length; i++) {
-              let s = Math.max(-1, Math.min(1, flatData[i]));
-              view.setInt16(i * 2, s < 0 ? s * 0x8000 : s * 0x7FFF, true);
-          }
-          
-          showToast("Processing Odia...", "info");
-          
-          fetch('/api/listen/odia', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/octet-stream' },
-              body: buffer
-          })
-          .then(res => res.json())
-          .then(data => {
-              if (data.text) {
-                  document.getElementById('visitorInput').value = data.text;
-                  setTimeout(() => sendVisitorQuery(), 300);
-              } else {
-                  showToast("Didn't catch that.", "info");
-              }
-          })
-          .catch(err => {
-              console.error("Backend AI Error:", err);
-              showToast("Server unreachable.", "danger");
-          });
-      }
-      
-      // Reset Odia variables
-      pcmData = [];
-      odiaProcessor = null;
-      odiaMediaStream = null;
-      if (odiaAudioContext) {
-          try { odiaAudioContext.close(); } catch(e){}
-          odiaAudioContext = null;
-      }
+  // Handle Global Cancel for Odia
+  if (isOdiaBackendRecording && forceCancel) {
+      isOdiaBackendRecording = false;
+      fetch('/api/listen/odia/stop', { method: 'POST' }); // Stop hardware but ignore result
   }
 }
 
-// Same robust logic applied to Training Mic
+// ─── ODIA TRAINING MIC LOGIC ─────────────────────────
 let trainRecognition = null;
+let isTrainOdiaRecording = false;
+
 function trainByVoice() {
   const btn = document.querySelector('.train-form .btn-voice');
-  if (btn && btn.classList.contains('listening')) {
-    stopTrainListen(btn);
-    return;
-  }
-  
-  // NOTE: Assuming English/Hindi for training logic, as Odia native text output requires same PCM buffer logic.
   const selectedLang = document.getElementById('trainLang').value;
-  if (btn) btn.classList.add('listening');
-  showToast('Listening... Speak the answer now.', 'info');
 
-  if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
-    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-    trainRecognition = new SR();
-    trainRecognition.lang = selectedLang === 'or' ? 'or-IN' : selectedLang === 'hi' ? 'hi-IN' : 'en-IN';
-    trainRecognition.interimResults = false;
+  if (selectedLang === 'or') {
+    // ---------------------------------------------------
+    // ODIA TRAINING: Tap to Start -> Tap to Stop
+    // ---------------------------------------------------
+    if (!isTrainOdiaRecording) {
+        if (btn) btn.classList.add('listening');
+        showToast('ମୁଁ ଶୁଣୁଛି... ମାଇକ୍ ଦାବି ସମାପ୍ତ କରନ୍ତୁ', 'info');
+        isTrainOdiaRecording = true;
+        fetch('/api/listen/odia/start', { method: 'POST' });
+    } else {
+        showToast('Processing Training Audio...', 'info');
+        if (btn) btn.classList.remove('listening');
+        
+        fetch('/api/listen/odia/stop', { method: 'POST' })
+            .then(res => res.json())
+            .then(data => {
+                if (data.text) {
+                    document.getElementById('trainA').value = data.text;
+                    showToast('Odia Voice captured!', 'success');
+                } else {
+                    showToast("No speech detected.", "info");
+                }
+                isTrainOdiaRecording = false;
+            });
+    }
+  } else {
+    // ---------------------------------------------------
+    // ENG/HIN TRAINING: Standard
+    // ---------------------------------------------------
+    if (btn && btn.classList.contains('listening')) { stopTrainListen(btn, false); return; }
+    if (btn) btn.classList.add('listening');
+    showToast('Listening... Speak the answer now.', 'info');
     
-    trainRecognition.onresult = (e) => {
-      document.getElementById('trainA').value = e.results[0][0].transcript;
-      stopTrainListen(btn);
-      showToast('Voice captured!', 'success');
-    };
-    trainRecognition.onerror = (e) => { 
-        console.error("Train STT Error:", e.error);
-        if(e.error!=='aborted') showToast('Mic error: ' + e.error, 'danger'); 
-        stopTrainListen(btn); 
-    };
-    trainRecognition.onend = () => stopTrainListen(btn);
-    
-    try { trainRecognition.start(); } catch(e) { stopTrainListen(btn); }
+    if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+      const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+      trainRecognition = new SR();
+      trainRecognition.lang = selectedLang === 'hi' ? 'hi-IN' : 'en-IN';
+      trainRecognition.interimResults = false;
+      
+      trainRecognition.onresult = (e) => {
+        document.getElementById('trainA').value = e.results[0][0].transcript;
+        stopTrainListen(btn, false);
+        showToast('Voice captured!', 'success');
+      };
+      trainRecognition.onerror = (e) => { 
+          if(e.error!=='aborted') showToast('Mic error: ' + e.error, 'danger'); 
+          stopTrainListen(btn, true); 
+      };
+      trainRecognition.onend = () => stopTrainListen(btn, true);
+      try { trainRecognition.start(); } catch(e) { stopTrainListen(btn, true); }
+    }
   }
 }
 
-function stopTrainListen(btn) {
+function stopTrainListen(btn, forceCancel = false) {
   if (trainRecognition) { 
     try { trainRecognition.abort(); } catch(e){} 
     trainRecognition = null; 
   }
+  
+  if (isTrainOdiaRecording && forceCancel) {
+      isTrainOdiaRecording = false;
+      fetch('/api/listen/odia/stop', { method: 'POST' }); // Stop hardware but ignore result
+  }
   if (btn) btn.classList.remove('listening');
 }
+
+
 
 // ─── UTILS ───────────────────────────────────────────
 function useHint(el) {
@@ -1580,10 +1594,19 @@ function showToast(msg, type='info') {
   }, 3000);
 }
 
+// ─── KEYBOARD & CANCEL BUTTON BINDINGS ────────────────
+// const cancelBtn = document.querySelector('.listen-cancel');
+if(cancelBtn) {
+    cancelBtn.onclick = function(e) {
+        e.preventDefault();
+        stopListening(true); 
+    };
+}
+
 document.addEventListener('keydown', e => {
   if (e.key === 'Escape') {
       stopListening(true);
-      stopTrainListen(document.querySelector('.train-form .btn-voice'));
+      stopTrainListen(document.querySelector('.train-form .btn-voice'), true);
   }
   if ((e.ctrlKey || e.metaKey) && e.key === 'm') { 
       e.preventDefault(); 

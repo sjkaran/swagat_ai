@@ -6,6 +6,9 @@ import io
 import numpy as np
 import torch
 from transformers import AutoModelForCTC, AutoProcessor, VitsModel, AutoTokenizer
+import sounddevice as sd
+import threading
+import time
 
 app = Flask(__name__)
 CORS(app)
@@ -62,31 +65,65 @@ def generate_ai_fallback_response(user_query, biz_context):
     return "I am currently unable to connect to my AI fallback brain. Please contact the staff directly."
 
 # ==========================================
-# 3. ODIA AI ENDPOINTS
+# 3. ODIA AI ENDPOINTS (Hardware Mic Control)
 # ==========================================
-@app.route('/api/listen/odia', methods=['POST'])
-def listen_odia():
-    """Receives raw 16kHz Int16 PCM audio from the browser, returns text."""
+# Global state to hold audio chunks while recording
+odia_mic_state = {"is_recording": False, "frames": []}
+
+def record_audio_task():
+    """Background thread that captures audio chunks directly from the system mic"""
+    def callback(indata, frames, time, status):
+        if odia_mic_state["is_recording"]:
+            odia_mic_state["frames"].append(indata.copy())
+
+    # 16kHz, mono, float32 - perfect format for indicwav2vec
     try:
-        raw_pcm = request.data
-        if not raw_pcm:
-            return jsonify({"text": ""})
-            
-        # Convert raw bytes back to the numpy array the model needs
-        audio_np = np.frombuffer(raw_pcm, dtype=np.int16).astype(np.float32) / 32768.0
-        audio_np = audio_np / (np.max(np.abs(audio_np)) + 1e-9) # Normalize
-        
-        inputs = stt_proc(audio_np, sampling_rate=16000, return_tensors="pt").input_values.to(DEVICE)
-        with torch.no_grad():
-            logits = stt_model(inputs).logits
-            
-        pred_ids = torch.argmax(logits, dim=-1)
-        text = stt_proc.batch_decode(pred_ids, skip_special_tokens=True)[0]
-        
-        return jsonify({"text": text})
+        with sd.InputStream(samplerate=16000, channels=1, dtype='float32', callback=callback):
+            while odia_mic_state["is_recording"]:
+                sd.sleep(100)
     except Exception as e:
-        print(f"STT Error: {e}")
-        return jsonify({"text": ""}), 500
+        print(f"Hardware Mic Error: {e}")
+        odia_mic_state["is_recording"] = False
+
+@app.route('/api/listen/odia/start', methods=['POST'])
+def start_odia_listen():
+    """Triggered when user first taps the mic"""
+    if odia_mic_state["is_recording"]:
+        return jsonify({"status": "already recording"})
+    
+    odia_mic_state["is_recording"] = True
+    odia_mic_state["frames"] = []
+    
+    # Start the recording loop in the background so the server doesn't freeze
+    threading.Thread(target=record_audio_task, daemon=True).start()
+    return jsonify({"status": "started"})
+
+@app.route('/api/listen/odia/stop', methods=['POST'])
+def stop_odia_listen():
+    """Triggered when user taps the mic again to stop and process"""
+    odia_mic_state["is_recording"] = False
+    time.sleep(0.3) # Give the thread a split-second to flush the final audio chunks
+    
+    if not odia_mic_state["frames"]:
+        return jsonify({"text": ""})
+        
+    # Stitch the chunks together
+    audio_np = np.concatenate(odia_mic_state["frames"], axis=0)
+    audio_np = np.squeeze(audio_np)
+    
+    # Normalize the waveform
+    if np.max(np.abs(audio_np)) > 0:
+        audio_np = audio_np / (np.max(np.abs(audio_np)) + 1e-9)
+        
+    # Run Inference
+    inputs = stt_proc(audio_np, sampling_rate=16000, return_tensors="pt").input_values.to(DEVICE)
+    with torch.no_grad():
+        logits = stt_model(inputs).logits
+        
+    pred_ids = torch.argmax(logits, dim=-1)
+    text = stt_proc.batch_decode(pred_ids, skip_special_tokens=True)[0]
+    
+    return jsonify({"text": text})
 
 @app.route('/api/tts/odia', methods=['POST'])
 def tts_odia():
