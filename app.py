@@ -9,6 +9,7 @@ from transformers import AutoModelForCTC, AutoProcessor, VitsModel, AutoTokenize
 import sounddevice as sd
 import threading
 import time
+import queue 
 
 app = Flask(__name__)
 CORS(app)
@@ -67,17 +68,20 @@ def generate_ai_fallback_response(user_query, biz_context):
 # ==========================================
 # 3. ODIA AI ENDPOINTS (Hardware Mic Control)
 # ==========================================
-# Global state to hold audio chunks while recording
-odia_mic_state = {"is_recording": False, "frames": []}
+odia_mic_state = {"is_recording": False}
+audio_queue = queue.Queue()
 
 def record_audio_task():
-    """Background thread that captures audio chunks directly from the system mic"""
+    """Background thread capturing pure, raw mic audio exactly like multi_lingual.py"""
     def callback(indata, frames, time, status):
+        if status:
+            print(f"Mic Status: {status}")
         if odia_mic_state["is_recording"]:
-            odia_mic_state["frames"].append(indata.copy())
+            # Safely capture chunks into the queue without dropping data
+            audio_queue.put(indata.copy())
 
-    # 16kHz, mono, float32 - perfect format for indicwav2vec
     try:
+        # 16kHz float32 is the exact raw format the wav2vec model natively expects
         with sd.InputStream(samplerate=16000, channels=1, dtype='float32', callback=callback):
             while odia_mic_state["is_recording"]:
                 sd.sleep(100)
@@ -87,35 +91,35 @@ def record_audio_task():
 
 @app.route('/api/listen/odia/start', methods=['POST'])
 def start_odia_listen():
-    """Triggered when user first taps the mic"""
     if odia_mic_state["is_recording"]:
         return jsonify({"status": "already recording"})
     
     odia_mic_state["is_recording"] = True
-    odia_mic_state["frames"] = []
     
-    # Start the recording loop in the background so the server doesn't freeze
+    # Clear the queue to ensure no leftover audio from the last tap
+    while not audio_queue.empty():
+        audio_queue.get()
+        
     threading.Thread(target=record_audio_task, daemon=True).start()
     return jsonify({"status": "started"})
 
 @app.route('/api/listen/odia/stop', methods=['POST'])
 def stop_odia_listen():
-    """Triggered when user taps the mic again to stop and process"""
     odia_mic_state["is_recording"] = False
-    time.sleep(0.3) # Give the thread a split-second to flush the final audio chunks
+    time.sleep(0.3) # Give the mic a split-second to flush the final audio chunk
     
-    if not odia_mic_state["frames"]:
+    frames = []
+    while not audio_queue.empty():
+        frames.append(audio_queue.get())
+        
+    if not frames:
         return jsonify({"text": ""})
         
-    # Stitch the chunks together
-    audio_np = np.concatenate(odia_mic_state["frames"], axis=0)
+    # Stitch the raw chunks directly
+    audio_np = np.concatenate(frames, axis=0)
     audio_np = np.squeeze(audio_np)
     
-    # Normalize the waveform
-    if np.max(np.abs(audio_np)) > 0:
-        audio_np = audio_np / (np.max(np.abs(audio_np)) + 1e-9)
-        
-    # Run Inference
+    # NATIVE PROCESSING: Pass raw array straight to the processor (No manual normalization!)
     inputs = stt_proc(audio_np, sampling_rate=16000, return_tensors="pt").input_values.to(DEVICE)
     with torch.no_grad():
         logits = stt_model(inputs).logits
@@ -127,9 +131,15 @@ def stop_odia_listen():
 
 @app.route('/api/tts/odia', methods=['POST'])
 def tts_odia():
-    """Takes Odia text and returns a playable WAV audio file."""
-    text = request.json.get("text", "")
+    text = request.json.get("text", "").strip()
     
+    # CRASH FIX: If text is empty, return a tiny 10ms silent audio file instead of crashing VITS
+    if not text:
+        wav_io = io.BytesIO()
+        scipy.io.wavfile.write(wav_io, rate=16000, data=np.zeros(160, dtype=np.int16))
+        wav_io.seek(0)
+        return send_file(wav_io, mimetype="audio/wav")
+        
     inputs = tts_tok(text, return_tensors="pt").to(DEVICE)
     with torch.no_grad():
         output_audio = tts_model(**inputs).waveform[0].cpu().numpy()
@@ -139,6 +149,7 @@ def tts_odia():
     wav_io.seek(0)
     
     return send_file(wav_io, mimetype="audio/wav")
+
 
 # ==========================================
 # 4. STANDARD ENDPOINTS
