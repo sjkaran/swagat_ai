@@ -1083,12 +1083,12 @@
 <script>
 // ─── STATE ───────────────────────────────────────────
 let lang = 'en';
-let mode = 'visitor'; // 'visitor' | 'owner'
+let mode = 'visitor'; 
 let isSpeaking = false;
 let queryCount = 0;
 let accurateCount = 0;
-let knowledgeBase = []; // {q, a, lang}
-let unanswered = []; // suggested training items
+let knowledgeBase = []; 
+let unanswered = []; 
 let currentTab = 'train';
 
 const labels = {
@@ -1121,24 +1121,9 @@ const labels = {
   }
 };
 
-// ─── SAMPLE KB DATA ───────────────────────────────────
-const sampleKB = [
-  {q: "What are the museum timings?", a: "The museum is open Tuesday to Sunday, 10 AM to 5 PM. Closed on Mondays and national holidays.", lang: "en"},
-  {q: "ଟିକେଟ୍ ମୂଲ୍ୟ କେତେ?", a: "ଭାରତୀୟ ଦର୍ଶକଙ୍କ ପାଇଁ ୨୦ ଟଙ୍କା ଏବଂ ବିଦେଶୀ ଦର୍ଶକଙ୍କ ପାଇଁ ୨୦୦ ଟଙ୍କା।", lang: "or"},
-  {q: "पार्किंग की सुविधा है क्या?", a: "हाँ, म्यूज़ियम के पास निःशुल्क पार्किंग उपलब्ध है।", lang: "hi"},
-];
-knowledgeBase = [...sampleKB];
-
-const sampleUnanswered = [
-  "Is photography allowed inside?",
-  "ଗ୍ୟାଲେରୀ ନଂ ୩ କୁ କିପରି ଯିବ?",
-  "क्या यहाँ कैफेटेरिया है?",
-];
-unanswered = [...sampleUnanswered];
-
 // ─── INIT ──────────────────────────────────────────────
 window.onload = () => {
-  renderKB();
+  fetchKB(); // Load DB
   renderSuggestions();
   updateStats();
   setTimeout(() => {
@@ -1147,6 +1132,25 @@ window.onload = () => {
   }, 800);
 };
 
+// Overriding the HTML Cancel button logic so it is guaranteed to work
+const cancelBtn = document.querySelector('.listen-cancel');
+if(cancelBtn) {
+    cancelBtn.onclick = function(e) {
+        e.preventDefault();
+        stopListening(true); // Force true cancel
+    };
+}
+
+async function fetchKB() {
+  try {
+    const res = await fetch('/api/kb');
+    knowledgeBase = await res.json();
+    renderKB();
+  } catch (err) {
+    console.log("DB Load Error - Ensure backend is running.");
+  }
+}
+
 // ─── LANGUAGE SWITCH ──────────────────────────────────
 function setLang(l) {
   lang = l;
@@ -1154,36 +1158,21 @@ function setLang(l) {
   document.querySelector(`.lang-btn[onclick="setLang('${l}')"]`).classList.add('active');
   document.getElementById('visitorInput').placeholder = labels[l].placeholder;
   document.getElementById('avatarTagline').textContent = labels[l].tagline;
-  updateHints(l);
-}
-
-function updateHints(l) {
-  const hints = {
-    or: ["ସମୟ କ'ଣ?", "ଟିକେଟ୍ ଦର?", "ଶୌଚାଳୟ କୁଆଡ଼େ?", "ପ୍ରବେଶ ନିୟମ?"],
-    hi: ["खुलने का समय?", "टिकट कितने का?", "वॉशरूम कहाँ है?", "नियम क्या हैं?"],
-    en: ["What are the timings?", "Ticket price?", "Where is the restroom?", "Contact number?"]
-  };
-  const c = document.getElementById('hintChips');
-  c.innerHTML = hints[l].map(h => `<div class="hint-chip" onclick="useHint(this)">${h}</div>`).join('');
 }
 
 // ─── MODE TOGGLE ──────────────────────────────────────
 function toggleMode() {
   if (mode === 'visitor') {
-    // Ask for password when trying to enter Owner Mode
     const pass = prompt("Enter Admin Password:");
-    
     if (pass === "swagat123") {
       mode = 'owner';
       document.getElementById('modeLabel').textContent = 'Owner Mode';
       document.getElementById('appShell').classList.remove('visitor-mode');
       showToast('Owner Mode Unlocked', 'success');
     } else if (pass !== null) {
-      // If they typed something wrong (and didn't just hit cancel)
       showToast('Incorrect password!', 'danger');
     }
   } else {
-    // Switch back to Visitor Mode instantly (no password needed to lock it)
     mode = 'visitor';
     document.getElementById('modeLabel').textContent = 'Visitor Mode';
     document.getElementById('appShell').classList.add('visitor-mode');
@@ -1212,172 +1201,97 @@ function showTyping(show) {
 }
 
 // ─── QUERY HANDLER ───────────────────────────────────
-function sendVisitorQuery() {
+async function sendVisitorQuery() {
   const input = document.getElementById('visitorInput');
   const q = input.value.trim();
   if (!q) return;
+  
   input.value = '';
   addMessage('visitor', q, 'Visitor');
   queryCount++;
   updateStats();
   showTyping(true);
 
-  setTimeout(() => {
+  try {
+    const res = await fetch('/api/ask', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ query: q, language: lang })
+    });
+    const data = await res.json();
+    
     showTyping(false);
-    const answer = lookupKB(q);
-    if (answer) {
-      addMessage('ai', answer, 'Swagata');
-      document.getElementById('fallbackBadge').style.display = 'none';
-      accurateCount++;
-      triggerSpeak(answer);
-    } else {
-      // Fallback to AI
+    addMessage('ai', data.answer, data.source === 'knowledge_base' ? 'Swagata' : 'Swagata · AI Assist');
+    
+    if (data.source === 'ai_fallback') {
       document.getElementById('fallbackBadge').style.display = 'flex';
-      const fallbackReply = getFallbackAnswer(q);
-      addMessage('ai', fallbackReply, 'Swagata · AI Assist');
       if (!unanswered.includes(q)) {
         unanswered.unshift(q);
         renderSuggestions();
-        showToast('New training suggestion logged!', 'info');
       }
-      triggerSpeak(fallbackReply);
+    } else {
+      document.getElementById('fallbackBadge').style.display = 'none';
+      accurateCount++;
     }
+    
+    triggerSpeak(data.answer);
     updateStats();
-  }, 1200 + Math.random() * 600);
-}
-
-function lookupKB(query) {
-  const qLow = query.toLowerCase().replace(/[?।]/g, '');
-  for (const entry of knowledgeBase) {
-    const entryQ = entry.q.toLowerCase().replace(/[?।]/g, '');
-    const words = qLow.split(' ').filter(w => w.length > 2);
-    const matches = words.filter(w => entryQ.includes(w)).length;
-    if (matches >= 2 || entryQ.includes(qLow) || qLow.includes(entryQ.substring(0,8))) {
-      return entry.a;
-    }
+  } catch (err) {
+    showTyping(false);
+    addMessage('ai', "Server error. Please check backend connection.", 'System');
   }
-  return null;
-}
-
-function getFallbackAnswer(q) {
-  const q2 = q.toLowerCase();
-  const responses = {
-    en: [
-      "Based on general information, I'd recommend contacting our staff directly for this. Our office number is displayed at the entrance.",
-      "That's a great question! I'm still learning. Our team will be happy to assist you with this query.",
-      "I don't have specific details on that yet, but our information desk can help you with this right away.",
-    ],
-    hi: [
-      "इस बारे में मुझे पूरी जानकारी नहीं है। कृपया हमारे स्टाफ से संपर्क करें।",
-      "यह एक अच्छा प्रश्न है! मैं अभी भी सीख रही हूँ। कृपया रिसेप्शन पर जाएं।",
-    ],
-    or: [
-      "ଏ ବିଷୟରେ ମୋ ପାଖରେ ସୂଚନା ନାହିଁ। ଆମ ସ୍ଟାଫଙ୍କ ସହ ଯୋଗାଯୋଗ କରନ୍ତୁ।",
-      "ଏହି ପ୍ରଶ୍ନ ପାଇଁ ଆମ ରିସେପ୍ସନ ଡେସ୍କ ଆପଣଙ୍କୁ ସାହାଯ୍ୟ କରିବ।",
-    ]
-  };
-  const pool = responses[lang] || responses['en'];
-  return pool[Math.floor(Math.random() * pool.length)];
 }
 
 // ─── TRAINING ────────────────────────────────────────
-function trainEntry() {
+async function trainEntry() {
   const q = document.getElementById('trainQ').value.trim();
   const a = document.getElementById('trainA').value.trim();
   const l = document.getElementById('trainLang').value;
   if (!q || !a) { showToast('Please fill both question and answer.', 'info'); return; }
-  knowledgeBase.unshift({q, a, lang: l});
-  document.getElementById('trainQ').value = '';
-  document.getElementById('trainA').value = '';
-  renderKB();
-  updateStats();
-  showToast('✓ Added to Knowledge Base!', 'success');
-}
 
-let trainRecognition = null;ś
-
-function trainByVoice() {
-  // Find the button to add the pulsing animation
-  const btn = document.querySelector('.train-form .btn-voice');
-  
-  // If it's already recording, clicking it again will stop it
-  if (btn && btn.classList.contains('listening')) {
-    stopTrainListen(btn);
-    return;
-  }
-
-  const selectedLang = document.getElementById('trainLang').value;
-  if (btn) btn.classList.add('listening');
-  showToast('Listening... Speak the answer now.', 'info'); // Note: No beep! Just speak.
-
-  // Check if browser supports Speech Recognition (Chrome/Edge)
-  if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
-    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-    trainRecognition = new SR();
-    
-    // Set language based on the dropdown
-    trainRecognition.lang = selectedLang === 'or' ? 'or-IN' : selectedLang === 'hi' ? 'hi-IN' : 'en-IN';
-    trainRecognition.interimResults = false;
-    
-    // When you stop speaking, it drops the text into the Answer box
-    trainRecognition.onresult = (e) => {
-      const transcript = e.results[0][0].transcript;
-      document.getElementById('trainA').value = transcript;
-      stopTrainListen(btn);
-      showToast('Voice captured!', 'success');
-    };
-    
-    trainRecognition.onerror = (e) => {
-      console.error("Mic error: ", e.error);
-      showToast('Mic error: ' + e.error, 'danger');
-      stopTrainListen(btn);
-    };
-    
-    trainRecognition.onend = () => { 
-      stopTrainListen(btn); 
-    };
-    
-    trainRecognition.start();
-  } else {
-    showToast('Speech recognition not supported in this browser. Use Chrome.', 'danger');
-    stopTrainListen(btn);
+  try {
+    const res = await fetch('/api/kb', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ question: q, answer: a, language: l })
+    });
+    if (res.ok) {
+      document.getElementById('trainQ').value = '';
+      document.getElementById('trainA').value = '';
+      await fetchKB(); 
+      updateStats();
+      showToast('✓ Added to Knowledge Base!', 'success');
+    }
+  } catch (err) {
+    showToast('Failed to save to database', 'danger');
   }
 }
 
-function stopTrainListen(btn) {
-  if (trainRecognition) { 
-    try { trainRecognition.stop(); } catch(e){} 
-    trainRecognition = null; 
-  }
-  if (btn) btn.classList.remove('listening');
+async function removeKB(id) {
+  try {
+    const res = await fetch(`/api/kb/${id}`, { method: 'DELETE' });
+    if (res.ok) { await fetchKB(); updateStats(); }
+  } catch (e) {}
 }
 
 function clearKB() {
   if (!confirm('Clear all knowledge base entries?')) return;
-  knowledgeBase = [];
-  renderKB();
-  updateStats();
+  // Requires backend logic to drop table, avoiding manual front-end drops for safety.
+  showToast("Please remove entries individually or reset the DB file.", "info");
 }
 
-// ─── RENDER KB ───────────────────────────────────────
 function renderKB() {
   const list = document.getElementById('kbList');
   if (knowledgeBase.length === 0) {
     list.innerHTML = '<div style="color:var(--muted);font-size:12px;padding:8px">No entries yet. Add some above!</div>';
   } else {
-    list.innerHTML = knowledgeBase.map((e,i) => `
-      <div class="trained-item" title="${e.a}">
-        <span style="flex:1"><strong style="color:#E0EAF8">${e.q}</strong><br><span style="color:var(--muted);font-size:11px">${e.lang.toUpperCase()} · ${e.a.substring(0,50)}${e.a.length>50?'…':''}</span></span>
-        <span onclick="removeKB(${i})" style="cursor:pointer;color:var(--muted);font-size:14px;flex-shrink:0">✕</span>
+    list.innerHTML = knowledgeBase.map(e => `
+      <div class="trained-item" title="${e.answer}">
+        <span style="flex:1"><strong style="color:#E0EAF8">${e.question}</strong><br><span style="color:var(--muted);font-size:11px">${e.language.toUpperCase()} · ${e.answer.substring(0,50)}${e.answer.length>50?'…':''}</span></span>
+        <span onclick="removeKB(${e.id})" style="cursor:pointer;color:var(--muted);font-size:14px;flex-shrink:0">✕</span>
       </div>`).join('');
   }
   document.getElementById('kbCountLabel').textContent = knowledgeBase.length;
-}
-
-function removeKB(i) {
-  knowledgeBase.splice(i, 1);
-  renderKB();
-  updateStats();
 }
 
 function renderSuggestions() {
@@ -1386,7 +1300,7 @@ function renderSuggestions() {
     list.innerHTML = '<div style="color:var(--muted);font-size:12px;padding:8px">No unanswered queries yet.</div>';
     return;
   }
-  list.innerHTML = unanswered.map((q,i) => `
+  list.innerHTML = unanswered.map(q => `
     <div class="suggestion-item" onclick="useSuggestion('${q.replace(/'/g,"\\'")}')">
       <span class="suggestion-q">${q}</span>
       <span class="suggestion-badge">Train →</span>
@@ -1397,10 +1311,8 @@ function useSuggestion(q) {
   switchTab('train', document.querySelector('.tab-btn'));
   document.getElementById('trainQ').value = q;
   document.getElementById('trainA').focus();
-  showToast('Fill in the answer to train Swagata!', 'info');
 }
 
-// ─── TABS ────────────────────────────────────────────
 function switchTab(tab, btn) {
   currentTab = tab;
   ['train','kb','suggestions'].forEach(t => {
@@ -1411,7 +1323,7 @@ function switchTab(tab, btn) {
   else document.querySelectorAll('.tab-btn')[['train','kb','suggestions'].indexOf(tab)].classList.add('active');
 }
 
-// ─── SPEAKING ANIMATION ──────────────────────────────
+// ─── SPEAKING ANIMATION (TTS) ────────────────────────
 function triggerSpeak(text) {
   const shell = document.getElementById('appShell');
   const face = document.getElementById('face');
@@ -1419,18 +1331,31 @@ function triggerSpeak(text) {
   face.classList.add('speaking');
   document.getElementById('statusText').textContent = 'Speaking...';
 
-  const duration = Math.max(1500, text.length * 55);
-  
-  // Web Speech API (if available)
-  if ('speechSynthesis' in window) {
-    const utter = new SpeechSynthesisUtterance(text);
-    utter.lang = lang === 'or' ? 'or-IN' : lang === 'hi' ? 'hi-IN' : 'en-IN';
-    utter.rate = 0.9; utter.pitch = 1.1;
-    utter.onend = () => stopSpeaking();
-    window.speechSynthesis.cancel();
-    window.speechSynthesis.speak(utter);
+  if (lang === 'or') {
+    fetch('/api/tts/odia', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text: text })
+    })
+    .then(res => res.blob())
+    .then(blob => {
+      const audio = new Audio(URL.createObjectURL(blob));
+      audio.onended = () => stopSpeaking();
+      audio.play();
+    })
+    .catch(() => stopSpeaking());
   } else {
-    setTimeout(stopSpeaking, duration);
+    const duration = Math.max(1500, text.length * 55);
+    if ('speechSynthesis' in window) {
+      const utter = new SpeechSynthesisUtterance(text);
+      utter.lang = lang === 'hi' ? 'hi-IN' : 'en-IN';
+      utter.rate = 0.9; utter.pitch = 1.1;
+      utter.onend = () => stopSpeaking();
+      window.speechSynthesis.cancel();
+      window.speechSynthesis.speak(utter);
+    } else {
+      setTimeout(stopSpeaking, duration);
+    }
   }
 }
 
@@ -1442,65 +1367,193 @@ function stopSpeaking() {
   document.getElementById('statusText').textContent = labels[lang]?.greeting?.substring(0,14) + '...' || 'Ready to help';
 }
 
-// ─── VOICE INPUT ─────────────────────────────────────
+// ─── VOICE INPUT (STT LOGIC) ─────────────────────────
 let recognition = null;
+let odiaAudioContext = null;
+let odiaMediaStream = null;
+let odiaProcessor = null;
+let pcmData = [];
 
-function toggleListen() {
+async function toggleListen() {
   const overlay = document.getElementById('listenOverlay');
   const btn = document.getElementById('voiceBtn');
   overlay.classList.add('active');
   btn.classList.add('listening');
-  document.getElementById('listenLang').textContent = labels[lang].listening;
 
-  if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
-    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-    recognition = new SR();
-    recognition.lang = lang === 'or' ? 'or-IN' : lang === 'hi' ? 'hi-IN' : 'en-IN';
-    recognition.interimResults = false;
-    
-    recognition.onresult = (e) => {
-      const transcript = e.results[0][0].transcript;
-      document.getElementById('visitorInput').value = transcript;
-      stopListening(false); // Normal stop
-      setTimeout(() => sendVisitorQuery(), 300);
-    };
-    
-    recognition.onerror = () => stopListening(true); // Abort on error
-    recognition.onend = () => stopListening(false);
-    recognition.start();
-  } else {
-    setTimeout(() => {
-      document.getElementById('visitorInput').value = "Please test in Chrome or Edge for voice recognition.";
+  if (lang === 'or') {
+    document.getElementById('listenLang').textContent = "Listening to Odia...";
+    try {
+      odiaMediaStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const AudioCtx = window.AudioContext || window.webkitAudioContext;
+      odiaAudioContext = new AudioCtx({ sampleRate: 16000 });
+      
+      const source = odiaAudioContext.createMediaStreamSource(odiaMediaStream);
+      odiaProcessor = odiaAudioContext.createScriptProcessor(4096, 1, 1);
+      pcmData = [];
+      
+      odiaProcessor.onaudioprocess = (e) => {
+          pcmData.push(new Float32Array(e.inputBuffer.getChannelData(0)));
+      };
+      
+      source.connect(odiaProcessor);
+      odiaProcessor.connect(odiaAudioContext.destination);
+    } catch (err) {
+      console.error("Mic Access Error:", err);
+      showToast("Mic permission denied or unavailable.", "danger");
       stopListening(true);
-    }, 2000);
+    }
+  } else {
+    document.getElementById('listenLang').textContent = labels[lang].listening;
+    if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+      const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+      recognition = new SR();
+      recognition.lang = lang === 'hi' ? 'hi-IN' : 'en-IN';
+      recognition.interimResults = false;
+      
+      recognition.onresult = (e) => {
+        document.getElementById('visitorInput').value = e.results[0][0].transcript;
+        stopListening(false);
+        setTimeout(() => sendVisitorQuery(), 300);
+      };
+      
+      recognition.onerror = (e) => {
+        console.error("Browser STT Error:", e.error);
+        if(e.error !== 'aborted') showToast("Mic error: " + e.error, "danger");
+        stopListening(true);
+      };
+      recognition.onend = () => { stopListening(true); };
+      
+      try { recognition.start(); } catch(e) { stopListening(true); }
+    } else {
+      showToast("Speech Recognition unsupported in this browser.", "danger");
+      stopListening(true);
+    }
   }
 }
 
-function stopListening(isCancel = false) {
-  if (recognition) { 
-    if (isCancel) {
-      recognition.onresult = null; // Prevent sending half-heard words
-      try { recognition.abort(); } catch(e){} // Kill instantly
+function stopListening(forceCancel = false) {
+  // 1. FORCE THE UI TO CLOSE INSTANTLY (Prevents getting stuck)
+  const overlay = document.getElementById('listenOverlay');
+  if (overlay) overlay.classList.remove('active');
+  const btn = document.getElementById('voiceBtn');
+  if (btn) btn.classList.remove('listening');
+
+  // 2. Kill Browser STT (English/Hindi)
+  if (recognition) {
+    recognition.onend = null; 
+    recognition.onerror = null;
+    if (forceCancel === true) {
+      try { recognition.abort(); } catch(e){}
     } else {
-      try { recognition.stop(); } catch(e){} // Finish nicely
+      try { recognition.stop(); } catch(e){}
     }
     recognition = null; 
   }
   
-  const overlay = document.getElementById('listenOverlay');
-  if (overlay) overlay.classList.remove('active');
+  // 3. Kill Odia Audio Capture
+  if (odiaProcessor || odiaMediaStream) {
+      try { if (odiaProcessor) odiaProcessor.disconnect(); } catch(e){}
+      try { if (odiaMediaStream) odiaMediaStream.getTracks().forEach(t => t.stop()); } catch(e){}
+      
+      // If it wasn't a cancel, send the data to Python!
+      if (forceCancel !== true && pcmData.length > 0) {
+          let length = pcmData.reduce((acc, val) => acc + val.length, 0);
+          let flatData = new Float32Array(length);
+          let offset = 0;
+          for (let block of pcmData) {
+              flatData.set(block, offset);
+              offset += block.length;
+          }
+          const buffer = new ArrayBuffer(flatData.length * 2);
+          const view = new DataView(buffer);
+          for (let i = 0; i < flatData.length; i++) {
+              let s = Math.max(-1, Math.min(1, flatData[i]));
+              view.setInt16(i * 2, s < 0 ? s * 0x8000 : s * 0x7FFF, true);
+          }
+          
+          showToast("Processing Odia...", "info");
+          
+          fetch('/api/listen/odia', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/octet-stream' },
+              body: buffer
+          })
+          .then(res => res.json())
+          .then(data => {
+              if (data.text) {
+                  document.getElementById('visitorInput').value = data.text;
+                  setTimeout(() => sendVisitorQuery(), 300);
+              } else {
+                  showToast("Didn't catch that.", "info");
+              }
+          })
+          .catch(err => {
+              console.error("Backend AI Error:", err);
+              showToast("Server unreachable.", "danger");
+          });
+      }
+      
+      // Reset Odia variables
+      pcmData = [];
+      odiaProcessor = null;
+      odiaMediaStream = null;
+      if (odiaAudioContext) {
+          try { odiaAudioContext.close(); } catch(e){}
+          odiaAudioContext = null;
+      }
+  }
+}
+
+// Same robust logic applied to Training Mic
+let trainRecognition = null;
+function trainByVoice() {
+  const btn = document.querySelector('.train-form .btn-voice');
+  if (btn && btn.classList.contains('listening')) {
+    stopTrainListen(btn);
+    return;
+  }
   
-  const btn = document.getElementById('voiceBtn');
+  // NOTE: Assuming English/Hindi for training logic, as Odia native text output requires same PCM buffer logic.
+  const selectedLang = document.getElementById('trainLang').value;
+  if (btn) btn.classList.add('listening');
+  showToast('Listening... Speak the answer now.', 'info');
+
+  if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    trainRecognition = new SR();
+    trainRecognition.lang = selectedLang === 'or' ? 'or-IN' : selectedLang === 'hi' ? 'hi-IN' : 'en-IN';
+    trainRecognition.interimResults = false;
+    
+    trainRecognition.onresult = (e) => {
+      document.getElementById('trainA').value = e.results[0][0].transcript;
+      stopTrainListen(btn);
+      showToast('Voice captured!', 'success');
+    };
+    trainRecognition.onerror = (e) => { 
+        console.error("Train STT Error:", e.error);
+        if(e.error!=='aborted') showToast('Mic error: ' + e.error, 'danger'); 
+        stopTrainListen(btn); 
+    };
+    trainRecognition.onend = () => stopTrainListen(btn);
+    
+    try { trainRecognition.start(); } catch(e) { stopTrainListen(btn); }
+  }
+}
+
+function stopTrainListen(btn) {
+  if (trainRecognition) { 
+    try { trainRecognition.abort(); } catch(e){} 
+    trainRecognition = null; 
+  }
   if (btn) btn.classList.remove('listening');
 }
 
-// ─── HINTS ───────────────────────────────────────────
+// ─── UTILS ───────────────────────────────────────────
 function useHint(el) {
   document.getElementById('visitorInput').value = el.textContent;
   document.getElementById('visitorInput').focus();
 }
 
-// ─── STATS ───────────────────────────────────────────
 function updateStats() {
   document.getElementById('statQueries').textContent = queryCount;
   document.getElementById('statKB').textContent = knowledgeBase.length;
@@ -1508,31 +1561,33 @@ function updateStats() {
   document.getElementById('statAcc').textContent = acc;
 }
 
-// ─── PROFILE ─────────────────────────────────────────
 function saveProfile() {
   const name = document.getElementById('bizName').value;
   showToast(`Profile saved: ${name}`, 'success');
 }
 
-// ─── TOAST ───────────────────────────────────────────
 function showToast(msg, type='info') {
   const c = document.getElementById('toastContainer');
   const t = document.createElement('div');
   t.className = `toast ${type}`;
   t.textContent = msg;
   c.appendChild(t);
-  setTimeout(() => { t.style.opacity = '0'; t.style.transform = 'translateX(20px)'; t.style.transition = 'all 0.3s'; setTimeout(() => t.remove(), 300); }, 3000);
+  setTimeout(() => { 
+      t.style.opacity = '0'; 
+      t.style.transform = 'translateX(20px)'; 
+      t.style.transition = 'all 0.3s'; 
+      setTimeout(() => t.remove(), 300); 
+  }, 3000);
 }
 
-// ─── KEYBOARD SHORTCUT ───────────────────────────────
 document.addEventListener('keydown', e => {
   if (e.key === 'Escape') {
-    stopListening(true);
-    stopTrainListen(document.querySelector('.train-form .btn-voice'));
+      stopListening(true);
+      stopTrainListen(document.querySelector('.train-form .btn-voice'));
   }
   if ((e.ctrlKey || e.metaKey) && e.key === 'm') { 
-    e.preventDefault(); 
-    toggleListen(); 
+      e.preventDefault(); 
+      toggleListen(); 
   }
 });
 </script>

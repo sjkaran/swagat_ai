@@ -2,111 +2,132 @@ from flask import Flask, request, jsonify, send_file
 from flask_cors import CORS
 import sqlite3
 import os
+import io
+import numpy as np
+import torch
+from transformers import AutoModelForCTC, AutoProcessor, VitsModel, AutoTokenizer
 
 app = Flask(__name__)
 CORS(app)
 
-# --- THE FIX: Force DB to save in the exact same folder as app.py ---
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DB_NAME = os.path.join(BASE_DIR, "swagat_ai.db")
-# --------------------------------------------------------------------
+import scipy.io.wavfile
+
+# ==========================================
+# 0. INITIALIZE ODIA AI ENGINES
+# ==========================================
+print("Loading Odia AI Engines... This may take a moment.")
+try:
+    with open(os.path.join(BASE_DIR,"source.txt"), "r") as key:
+        HF_TOKEN = key.readline().strip()
+except FileNotFoundError:
+    print("WARNING: API_KEY.txt not found. Models may fail to download.")
+    HF_TOKEN = None
+
+DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
+
+# Load STT
+stt_proc = AutoProcessor.from_pretrained("ai4bharat/indicwav2vec-odia", token=HF_TOKEN)
+stt_model = AutoModelForCTC.from_pretrained("ai4bharat/indicwav2vec-odia", token=HF_TOKEN).to(DEVICE)
+
+# Load TTS
+tts_tok = AutoTokenizer.from_pretrained("facebook/mms-tts-ory", token=HF_TOKEN)
+tts_model = VitsModel.from_pretrained("facebook/mms-tts-ory", token=HF_TOKEN).to(DEVICE)
+print(f"Odia Engines Ready on {DEVICE}!")
 
 # ==========================================
 # 1. DATABASE INITIALIZATION
 # ==========================================
 def init_db():
-# ... rest of your code stays the same
     conn = sqlite3.connect(DB_NAME)
     cursor = conn.cursor()
-    
-    # Create Knowledge Base Table
-    cursor.execute('''
-        CREATE TABLE IF NOT EXISTS knowledge_base (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            question TEXT NOT NULL,
-            answer TEXT NOT NULL,
-            language TEXT NOT NULL
-        )
-    ''')
-    
-    # Create Business Profile Table
-    cursor.execute('''
-        CREATE TABLE IF NOT EXISTS business_profile (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            name TEXT NOT NULL,
-            biz_type TEXT NOT NULL
-        )
-    ''')
-    
+    cursor.execute('''CREATE TABLE IF NOT EXISTS knowledge_base (id INTEGER PRIMARY KEY AUTOINCREMENT, question TEXT NOT NULL, answer TEXT NOT NULL, language TEXT NOT NULL)''')
+    cursor.execute('''CREATE TABLE IF NOT EXISTS business_profile (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, biz_type TEXT NOT NULL)''')
     conn.commit()
     conn.close()
 
-# Run this once when the app starts
 if not os.path.exists(DB_NAME):
     init_db()
 
 def get_db_connection():
     conn = sqlite3.connect(DB_NAME)
-    conn.row_factory = sqlite3.Row  # Returns rows as dictionaries
+    conn.row_factory = sqlite3.Row
     return conn
 
 # ==========================================
-# 2. AI FALLBACK MODULE (LEFT FOR YOU)
+# 2. AI FALLBACK MODULE
 # ==========================================
 def generate_ai_fallback_response(user_query, biz_context):
-    """
-    TODO: Integrate your Large Language Model (LLM) here.
-    """
-    # ... YOUR AI INTEGRATION GOES HERE ...
-    
     return "I am currently unable to connect to my AI fallback brain. Please contact the staff directly."
 
 # ==========================================
-# 3. SERVE THE FRONTEND
+# 3. ODIA AI ENDPOINTS
+# ==========================================
+@app.route('/api/listen/odia', methods=['POST'])
+def listen_odia():
+    """Receives raw 16kHz Int16 PCM audio from the browser, returns text."""
+    try:
+        raw_pcm = request.data
+        if not raw_pcm:
+            return jsonify({"text": ""})
+            
+        # Convert raw bytes back to the numpy array the model needs
+        audio_np = np.frombuffer(raw_pcm, dtype=np.int16).astype(np.float32) / 32768.0
+        audio_np = audio_np / (np.max(np.abs(audio_np)) + 1e-9) # Normalize
+        
+        inputs = stt_proc(audio_np, sampling_rate=16000, return_tensors="pt").input_values.to(DEVICE)
+        with torch.no_grad():
+            logits = stt_model(inputs).logits
+            
+        pred_ids = torch.argmax(logits, dim=-1)
+        text = stt_proc.batch_decode(pred_ids, skip_special_tokens=True)[0]
+        
+        return jsonify({"text": text})
+    except Exception as e:
+        print(f"STT Error: {e}")
+        return jsonify({"text": ""}), 500
+
+@app.route('/api/tts/odia', methods=['POST'])
+def tts_odia():
+    """Takes Odia text and returns a playable WAV audio file."""
+    text = request.json.get("text", "")
+    
+    inputs = tts_tok(text, return_tensors="pt").to(DEVICE)
+    with torch.no_grad():
+        output_audio = tts_model(**inputs).waveform[0].cpu().numpy()
+        
+    wav_io = io.BytesIO()
+    scipy.io.wavfile.write(wav_io, rate=tts_model.config.sampling_rate, data=output_audio)
+    wav_io.seek(0)
+    
+    return send_file(wav_io, mimetype="audio/wav")
+
+# ==========================================
+# 4. STANDARD ENDPOINTS
 # ==========================================
 @app.route('/')
-def serve_frontend():
-    # This serves your index.html file at http://127.0.0.1:8000/
-    return send_file('index.html')
-
-
-# ==========================================
-# 4. API ENDPOINTS
-# ==========================================
+def serve_frontend(): return send_file('index.html')
 
 @app.route('/api/ask', methods=['POST'])
 def ask_assistant():
     data = request.json
     user_query = data.get('query', '').lower().strip()
     language = data.get('language', 'en')
-    
     conn = get_db_connection()
-    
-    # 1. Check Knowledge Base
-    kb_items = conn.execute(
-        'SELECT * FROM knowledge_base WHERE language = ?', (language,)
-    ).fetchall()
+    kb_items = conn.execute('SELECT * FROM knowledge_base WHERE language = ?', (language,)).fetchall()
     
     for item in kb_items:
-        db_question = item['question'].lower()
-        if db_question in user_query or user_query in db_question:
+        db_q = item['question'].lower()
+        if db_q in user_query or user_query in db_q:
             conn.close()
             return jsonify({"answer": item['answer'], "source": "knowledge_base"})
-    
-    # 2. If no match, gather context and trigger AI Fallback
+            
     profile = conn.execute('SELECT * FROM business_profile LIMIT 1').fetchone()
     conn.close()
-    
-    biz_context = {
-        "name": profile['name'] if profile else "Unknown",
-        "type": profile['biz_type'] if profile else "Unknown"
-    }
-    
-    ai_answer = generate_ai_fallback_response(data.get('query', ''), biz_context)
-    
+    biz_context = {"name": profile['name'] if profile else "Unknown", "type": profile['biz_type'] if profile else "Unknown"}
+    ai_answer = generate_ai_fallback_response(user_query, biz_context)
     return jsonify({"answer": ai_answer, "source": "ai_fallback"})
-
-# --- Knowledge Base CRUD ---
 
 @app.route('/api/kb', methods=['GET'])
 def get_knowledge_base():
@@ -120,20 +141,11 @@ def create_kb_entry():
     data = request.json
     conn = get_db_connection()
     cursor = conn.cursor()
-    cursor.execute(
-        'INSERT INTO knowledge_base (question, answer, language) VALUES (?, ?, ?)',
-        (data['question'], data['answer'], data['language'])
-    )
+    cursor.execute('INSERT INTO knowledge_base (question, answer, language) VALUES (?, ?, ?)', (data['question'], data['answer'], data['language']))
     conn.commit()
     new_id = cursor.lastrowid
     conn.close()
-    
-    return jsonify({
-        "id": new_id, 
-        "question": data['question'], 
-        "answer": data['answer'], 
-        "language": data['language']
-    })
+    return jsonify({"id": new_id, "question": data['question'], "answer": data['answer'], "language": data['language']})
 
 @app.route('/api/kb/<int:item_id>', methods=['DELETE'])
 def delete_kb_entry(item_id):
@@ -143,40 +155,24 @@ def delete_kb_entry(item_id):
     conn.close()
     return jsonify({"status": "success", "message": "Deleted successfully"})
 
-# --- Business Profile CRUD ---
-
-@app.route('/api/profile', methods=['GET'])
-def get_profile():
+@app.route('/api/profile', methods=['GET', 'POST'])
+def handle_profile():
     conn = get_db_connection()
-    profile = conn.execute('SELECT * FROM business_profile LIMIT 1').fetchone()
-    conn.close()
-    
-    if not profile:
-        return jsonify({"name": "Odisha State Museum", "biz_type": "Heritage Site / Museum"})
-    return jsonify(dict(profile))
-
-@app.route('/api/profile', methods=['POST'])
-def update_profile():
-    data = request.json
-    conn = get_db_connection()
-    cursor = conn.cursor()
-    
-    profile = cursor.execute('SELECT id FROM business_profile LIMIT 1').fetchone()
-    
-    if not profile:
-        cursor.execute(
-            'INSERT INTO business_profile (name, biz_type) VALUES (?, ?)',
-            (data['name'], data['biz_type'])
-        )
+    if request.method == 'GET':
+        profile = conn.execute('SELECT * FROM business_profile LIMIT 1').fetchone()
+        conn.close()
+        return jsonify(dict(profile)) if profile else jsonify({"name": "Odisha State Museum", "biz_type": "Heritage Site / Museum"})
     else:
-        cursor.execute(
-            'UPDATE business_profile SET name = ?, biz_type = ? WHERE id = ?',
-            (data['name'], data['biz_type'], profile['id'])
-        )
-        
-    conn.commit()
-    conn.close()
-    return jsonify({"status": "success", "message": "Profile updated"})
+        data = request.json
+        cursor = conn.cursor()
+        profile = cursor.execute('SELECT id FROM business_profile LIMIT 1').fetchone()
+        if not profile:
+            cursor.execute('INSERT INTO business_profile (name, biz_type) VALUES (?, ?)', (data['name'], data['biz_type']))
+        else:
+            cursor.execute('UPDATE business_profile SET name = ?, biz_type = ? WHERE id = ?', (data['name'], data['biz_type'], profile['id']))
+        conn.commit()
+        conn.close()
+        return jsonify({"status": "success"})
 
 if __name__ == '__main__':
     app.run(debug=True, port=8000)
