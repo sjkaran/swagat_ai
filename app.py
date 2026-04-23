@@ -10,6 +10,7 @@ import sounddevice as sd
 import threading
 import time
 import queue 
+import difflib
 
 app = Flask(__name__)
 CORS(app)
@@ -106,7 +107,7 @@ def start_odia_listen():
 @app.route('/api/listen/odia/stop', methods=['POST'])
 def stop_odia_listen():
     odia_mic_state["is_recording"] = False
-    time.sleep(0.3) # Give the mic a split-second to flush the final audio chunk
+    time.sleep(0.3) 
     
     frames = []
     while not audio_queue.empty():
@@ -115,11 +116,15 @@ def stop_odia_listen():
     if not frames:
         return jsonify({"text": ""})
         
-    # Stitch the raw chunks directly
     audio_np = np.concatenate(frames, axis=0)
     audio_np = np.squeeze(audio_np)
     
-    # NATIVE PROCESSING: Pass raw array straight to the processor (No manual normalization!)
+    # --- NEW ACCURACY FIX: Z-Score Normalization ---
+    # This mathematically perfectly levels your voice volume so the AI doesn't hear static
+    if np.std(audio_np) > 0:
+        audio_np = (audio_np - np.mean(audio_np)) / np.std(audio_np)
+    # -----------------------------------------------
+    
     inputs = stt_proc(audio_np, sampling_rate=16000, return_tensors="pt").input_values.to(DEVICE)
     with torch.no_grad():
         logits = stt_model(inputs).logits
@@ -128,6 +133,7 @@ def stop_odia_listen():
     text = stt_proc.batch_decode(pred_ids, skip_special_tokens=True)[0]
     
     return jsonify({"text": text})
+
 
 @app.route('/api/tts/odia', methods=['POST'])
 def tts_odia():
@@ -162,17 +168,36 @@ def ask_assistant():
     data = request.json
     user_query = data.get('query', '').lower().strip()
     language = data.get('language', 'en')
+    
     conn = get_db_connection()
     kb_items = conn.execute('SELECT * FROM knowledge_base WHERE language = ?', (language,)).fetchall()
     
+    best_match = None
+    highest_ratio = 0.0
+    
     for item in kb_items:
         db_q = item['question'].lower()
+        
+        # Exact or Substring match (100% guarantee)
         if db_q in user_query or user_query in db_q:
-            conn.close()
-            return jsonify({"answer": item['answer'], "source": "knowledge_base"})
+            best_match = item
+            highest_ratio = 1.0
+            break
             
-    profile = conn.execute('SELECT * FROM business_profile LIMIT 1').fetchone()
+        # FUZZY MATCHING (Calculates similarity percentage)
+        ratio = difflib.SequenceMatcher(None, user_query, db_q).ratio()
+        if ratio > highest_ratio:
+            highest_ratio = ratio
+            best_match = item
+            
     conn.close()
+    
+    # If the match is 65% (0.65) or higher, use the trained answer!
+    if best_match and highest_ratio >= 0.65:
+        return jsonify({"answer": best_match['answer'], "source": "knowledge_base"})
+            
+    # Fallback AI (if below 65% match)
+    profile = get_db_connection().execute('SELECT * FROM business_profile LIMIT 1').fetchone()
     biz_context = {"name": profile['name'] if profile else "Unknown", "type": profile['biz_type'] if profile else "Unknown"}
     ai_answer = generate_ai_fallback_response(user_query, biz_context)
     return jsonify({"answer": ai_answer, "source": "ai_fallback"})
