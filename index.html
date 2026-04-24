@@ -436,6 +436,21 @@
     display: inline-flex; align-items: center; gap: 5px;
     background: rgba(240,165,0,0.1); border: 1px solid rgba(240,165,0,0.25);
     border-radius: 20px; padding: 3px 10px; font-size: 10px; color: var(--gold); font-weight: 500;
+    cursor: default;
+  }
+
+  /* AI model pill shown inside AI messages */
+  .ai-model-pill {
+    display: inline-flex; align-items: center; gap: 4px;
+    font-size: 9px; font-weight: 600; padding: 2px 8px;
+    border-radius: 10px; margin-top: 5px;
+    background: rgba(240,165,0,0.1); border: 1px solid rgba(240,165,0,0.2);
+    color: var(--gold); letter-spacing: 0.3px;
+  }
+
+  /* Typing indicator label */
+  .typing-label {
+    font-size: 10px; color: var(--muted); margin-left: 4px;
   }
 
   /* Auto-detect lang toast (inline in input zone) */
@@ -798,6 +813,7 @@
         <div style="padding: 0 20px;">
           <div class="typing-indicator" id="typingIndicator">
             <span></span><span></span><span></span>
+            <span class="typing-label" id="typingLabel">Thinking...</span>
           </div>
         </div>
         <div class="input-zone">
@@ -974,6 +990,7 @@ const labels = {
 // ─── INIT ───────────────────────────────────────────────
 window.onload = () => {
   fetchKB();
+  checkAIStatus();   // ← Check if AI fallback is configured
   renderSuggestions();
   updateStats();
   setTimeout(() => {
@@ -987,6 +1004,28 @@ window.onload = () => {
     stopListening(true);
   };
 };
+
+async function checkAIStatus() {
+  try {
+    const res = await fetch('/api/ai-status');
+    const data = await res.json();
+    const badge = document.getElementById('fallbackBadge');
+    const modelShort = data.model.split('/').pop();
+    if (data.token_configured) {
+      badge.innerHTML = `✦ AI: ${modelShort}`;
+      badge.title = `Model: ${data.model}\nInference: HF Serverless API`;
+    } else {
+      badge.innerHTML = `⚠ AI: No token`;
+      badge.style.background = 'rgba(232,64,64,0.1)';
+      badge.style.borderColor = 'rgba(232,64,64,0.25)';
+      badge.style.color = '#FF9090';
+      badge.title = 'Add your HF token to source.txt to enable AI fallback';
+    }
+    badge.style.display = 'flex';
+  } catch(e) {
+    // Backend not running yet — silent
+  }
+}
 
 async function fetchKB() {
   try {
@@ -1060,13 +1099,13 @@ function toggleMode() {
 }
 
 // ─── MESSAGING ────────────────────────────────────────────
-function addMessage(role, text, name, confidence = null, matchType = null, matchedQuestion = null) {
+function addMessage(role, text, name, confidence = null, matchType = null, matchedQuestion = null, aiModel = null) {
   const feed = document.getElementById('convoFeed');
   const now = new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
   const div = document.createElement('div');
   div.className = `msg ${role}`;
 
-  // Confidence badge for AI KB responses
+  // Confidence badge for KB responses
   let confBadge = '';
   if (role === 'ai' && confidence !== null && confidence > 0) {
     const pct = Math.round(confidence * 100);
@@ -1076,24 +1115,34 @@ function addMessage(role, text, name, confidence = null, matchType = null, match
     confBadge = `<span class="confidence-badge ${cls}">${icon} ${label}</span>`;
   }
 
-  // Matched question reference (only for fuzzy KB hits)
+  // Matched question reference for fuzzy KB hits
   let matchedRef = '';
   if (role === 'ai' && matchedQuestion && matchType === 'fuzzy') {
     matchedRef = `<div class="matched-ref">🔍 Matched: <em>"${matchedQuestion}"</em></div>`;
   }
 
+  // AI model pill for fallback responses
+  let modelPill = '';
+  if (role === 'ai' && aiModel) {
+    const shortName = aiModel.split('/').pop(); // e.g. "Phi-3.5-mini-instruct"
+    modelPill = `<div><span class="ai-model-pill">✦ ${shortName}</span></div>`;
+  }
+
   div.innerHTML = `
     <div class="msg-avatar ${role === 'ai' ? 'ai-av' : 'visitor-av'}">${role === 'ai' ? 'SW' : 'V'}</div>
     <div>
-      <div class="msg-bubble">${text}${confBadge}${matchedRef}</div>
+      <div class="msg-bubble">${text}${confBadge}${matchedRef}${modelPill}</div>
       <div class="msg-meta">${name || (role==='ai' ? 'Swagata' : 'Visitor')} · ${now}</div>
     </div>`;
   feed.appendChild(div);
   feed.scrollTop = feed.scrollHeight;
 }
 
-function showTyping(show) {
-  document.getElementById('typingIndicator').style.display = show ? 'flex' : 'none';
+function showTyping(show, label = 'Thinking...') {
+  const el = document.getElementById('typingIndicator');
+  const lbl = document.getElementById('typingLabel');
+  el.style.display = show ? 'flex' : 'none';
+  if (lbl) lbl.textContent = label;
 }
 
 // ─── QUERY HANDLER ────────────────────────────────────────
@@ -1109,7 +1158,7 @@ async function sendVisitorQuery() {
   addMessage('visitor', q, 'Visitor');
   queryCount++;
   updateStats();
-  showTyping(true);
+  showTyping(true, 'Searching knowledge base...');
 
   try {
     const res = await fetch('/api/ask', {
@@ -1119,9 +1168,16 @@ async function sendVisitorQuery() {
     });
     const data = await res.json();
 
+    // If going to AI, update typing label
+    if (data.source === 'ai_fallback') {
+      showTyping(true, 'Asking AI...');
+      await new Promise(r => setTimeout(r, 400)); // brief visual pause
+    }
+
     showTyping(false);
-    const senderName = data.source === 'knowledge_base' ? 'Swagata' : 'Swagata · AI Assist';
-    addMessage('ai', data.answer, senderName, data.confidence || null, data.match_type || null, data.matched_question || null);
+    const senderName = data.source === 'knowledge_base' ? 'Swagata' : 'Swagata · AI';
+    const aiModel = data.source === 'ai_fallback' ? data.ai_model : null;
+    addMessage('ai', data.answer, senderName, data.confidence || null, data.match_type || null, data.matched_question || null, aiModel);
 
     if (data.source === 'ai_fallback') {
       document.getElementById('fallbackBadge').style.display = 'flex';

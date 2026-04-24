@@ -4,6 +4,7 @@ import sqlite3
 import os
 import io
 import re
+import json
 import numpy as np
 import torch
 from transformers import AutoModelForCTC, AutoProcessor, VitsModel, AutoTokenizer
@@ -387,10 +388,160 @@ def _result(item, score, match_type, signals):
     }
 
 # ==========================================
-# 5. AI FALLBACK MODULE
+# 5. AI FALLBACK — Phi-3.5-mini via HF Inference API
 # ==========================================
-def generate_ai_fallback_response(user_query, biz_context):
-    return "I am currently unable to connect to my AI fallback brain. Please contact the staff directly."
+
+# ──────────────────────────────────────────────────────────────────────────────
+# 🔑  PLACE YOUR HUGGING FACE TOKEN HERE
+#     Get one free at: https://huggingface.co/settings/tokens  (READ access is enough)
+#     The same token you already have in source.txt will work.
+#     We read it from source.txt automatically below — no change needed unless
+#     you want a separate token for the AI fallback.
+# ──────────────────────────────────────────────────────────────────────────────
+AI_FALLBACK_HF_TOKEN = HF_TOKEN   # ← Uses your source.txt token automatically.
+                                   #   To override, set: AI_FALLBACK_HF_TOKEN = "hf_xxxxxxxxxxxx"
+
+# Model choice — change to any HF-hosted instruction model if desired:
+#   "microsoft/Phi-3.5-mini-instruct"    ← DEFAULT: best quality, not gated, free
+#   "Qwen/Qwen2.5-1.5B-Instruct"         ← smaller, faster, multilingual
+#   "HuggingFaceTB/SmolLM2-1.7B-Instruct"← lightest, HF-native
+#   "meta-llama/Llama-3.2-3B-Instruct"   ← best multilingual (needs license accept)
+AI_FALLBACK_MODEL = "microsoft/Phi-3.5-mini-instruct"
+
+# HF Serverless Inference API endpoint
+HF_INFERENCE_URL = f"https://api-inference.huggingface.co/models/{AI_FALLBACK_MODEL}/v1/chat/completions"
+
+# ──────────────────────────────────────────────────────────────────────────────
+# CUSTOM SYSTEM PROMPT  ← Edit this to describe your venue/business context
+# The AI will use this as its personality and knowledge frame.
+# ──────────────────────────────────────────────────────────────────────────────
+def build_system_prompt(biz_context: dict) -> str:
+    return f"""You are Swagat, a friendly and helpful AI reception assistant for {biz_context['name']}, \
+which is a {biz_context['type']} located in Odisha, India.
+
+Your role:
+- Answer visitor questions about the venue, services, timings, tickets, facilities, and general information
+- Be warm, polite and concise — visitors may be tourists, locals, or officials
+- If a question is genuinely outside your knowledge, say so honestly and suggest they ask the front desk
+- Keep answers short (2-4 sentences max) — this is a reception kiosk, not a chat bot
+- Do NOT make up specific details like phone numbers, prices, or dates unless you know them for certain
+- If the visitor writes in Odia or Hindi, try to respond in the same language if possible
+
+Business context:
+  Name: {biz_context['name']}
+  Type: {biz_context['type']}
+  Location: Odisha, India
+
+You are the first point of contact for visitors. Be helpful, accurate, and brief."""
+
+def generate_ai_fallback_response(user_query: str, biz_context: dict) -> dict:
+    """
+    Call Phi-3.5-mini-instruct via HF Serverless Inference API.
+    Returns a dict: { 'answer': str, 'model': str, 'ai_source': str }
+
+    Falls back gracefully if:
+    - No HF token configured
+    - Model is loading (503) — returns a retry-later message
+    - Network error / timeout
+    - Rate limit hit (429)
+    """
+    if not AI_FALLBACK_HF_TOKEN:
+        return {
+            "answer": "I don't have that information in my knowledge base yet. "
+                      "Please ask our staff at the front desk for assistance.",
+            "model": "none",
+            "ai_source": "no_token"
+        }
+
+    system_prompt = build_system_prompt(biz_context)
+
+    payload = {
+        "model": AI_FALLBACK_MODEL,
+        "messages": [
+            {"role": "system",  "content": system_prompt},
+            {"role": "user",    "content": user_query}
+        ],
+        "max_tokens": 180,      # Keep answers concise for reception kiosk
+        "temperature": 0.4,     # Low temp = factual, consistent answers
+        "top_p": 0.85,
+        "stream": False
+    }
+
+    headers = {
+        "Authorization": f"Bearer {AI_FALLBACK_HF_TOKEN}",
+        "Content-Type": "application/json",
+        "X-Wait-For-Model": "true"   # Wait up to 20s if model is cold-starting
+    }
+
+    try:
+        import urllib.request
+        import urllib.error
+ 
+        req_data = json.dumps(payload).encode("utf-8")
+        req = urllib.request.Request(
+            HF_INFERENCE_URL,
+            data=req_data,
+            headers=headers,
+            method="POST"
+        )
+
+        with urllib.request.urlopen(req, timeout=30) as resp:
+            result = json.loads(resp.read().decode("utf-8"))
+
+        # Extract answer from OpenAI-compatible chat completion response
+        answer = result["choices"][0]["message"]["content"].strip()
+
+        # Trim any leading/trailing role echoes the model might add
+        for prefix in ["Swagata:", "Assistant:", "AI:"]:
+            if answer.startswith(prefix):
+                answer = answer[len(prefix):].strip()
+
+        print(f"[AI Fallback] ✓ Phi-3.5 responded ({len(answer)} chars)")
+        return {
+            "answer": answer,
+            "model": AI_FALLBACK_MODEL,
+            "ai_source": "phi35_hf_inference"
+        }
+
+    except urllib.error.HTTPError as e:
+        status = e.code
+        body = e.read().decode("utf-8", errors="replace")
+        print(f"[AI Fallback] HTTP {status}: {body[:200]}")
+
+        if status == 503:
+            return {
+                "answer": "My AI brain is warming up — please try again in 20 seconds, "
+                          "or ask our staff directly.",
+                "model": AI_FALLBACK_MODEL,
+                "ai_source": "model_loading"
+            }
+        if status == 429:
+            return {
+                "answer": "I'm receiving too many questions right now. "
+                          "Please try again in a moment or speak to our staff.",
+                "model": AI_FALLBACK_MODEL,
+                "ai_source": "rate_limited"
+            }
+        if status == 401:
+            return {
+                "answer": "AI configuration issue. Please contact the administrator.",
+                "model": AI_FALLBACK_MODEL,
+                "ai_source": "auth_error"
+            }
+        return {
+            "answer": "I couldn't get an AI response right now. Please ask our front desk staff.",
+            "model": AI_FALLBACK_MODEL,
+            "ai_source": f"http_error_{status}"
+        }
+
+    except Exception as e:
+        print(f"[AI Fallback] Error: {e}")
+        return {
+            "answer": "I'm having trouble connecting to my AI brain. "
+                      "Please ask our staff at the front desk — they'll be happy to help!",
+            "model": AI_FALLBACK_MODEL,
+            "ai_source": "network_error"
+        }
 
 # ==========================================
 # 6. ODIA AI ENDPOINTS (Hardware Mic Control)
@@ -524,11 +675,28 @@ def ask_assistant():
     profile = conn.execute('SELECT * FROM business_profile LIMIT 1').fetchone()
     conn.close()
     biz_context = {
-        "name": profile['name'] if profile else "Unknown",
-        "type": profile['biz_type'] if profile else "Unknown"
+        "name": profile['name'] if profile else "Odisha State Museum",
+        "type": profile['biz_type'] if profile else "Heritage Site / Museum"
     }
-    ai_answer = generate_ai_fallback_response(user_query, biz_context)
-    return jsonify({"answer": ai_answer, "source": "ai_fallback", "confidence": 0.0})
+
+    # ── AI Fallback: Phi-3.5-mini via HF Inference API ──────────────────────
+    ai_result = generate_ai_fallback_response(user_query, biz_context)
+    return jsonify({
+        "answer":     ai_result["answer"],
+        "source":     "ai_fallback",
+        "ai_model":   ai_result["model"],
+        "ai_source":  ai_result["ai_source"],
+        "confidence": 0.0
+    })
+
+@app.route('/api/ai-status', methods=['GET'])
+def ai_status():
+    """Returns current AI fallback configuration status for the frontend."""
+    return jsonify({
+        "model": AI_FALLBACK_MODEL,
+        "token_configured": bool(AI_FALLBACK_HF_TOKEN),
+        "inference_url": HF_INFERENCE_URL
+    })
 
 @app.route('/api/kb', methods=['GET'])
 def get_knowledge_base():
