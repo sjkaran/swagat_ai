@@ -341,6 +341,18 @@
   .msg-meta { font-size: 10px; color: var(--muted); margin-top: 4px; }
   .visitor .msg-meta { text-align: right; }
 
+  /* Matched question reference */
+  .matched-ref {
+    margin-top: 7px;
+    padding: 5px 9px;
+    background: rgba(0,212,187,0.07);
+    border-left: 2px solid rgba(0,212,187,0.4);
+    border-radius: 0 6px 6px 0;
+    font-size: 10px; color: rgba(0,212,187,0.75);
+    font-style: normal;
+  }
+  .matched-ref em { font-style: italic; color: rgba(0,212,187,0.9); }
+
   /* Confidence badge on message */
   .confidence-badge {
     display: inline-flex; align-items: center; gap: 4px;
@@ -1048,26 +1060,32 @@ function toggleMode() {
 }
 
 // ─── MESSAGING ────────────────────────────────────────────
-function addMessage(role, text, name, confidence = null, matchType = null) {
+function addMessage(role, text, name, confidence = null, matchType = null, matchedQuestion = null) {
   const feed = document.getElementById('convoFeed');
   const now = new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
   const div = document.createElement('div');
   div.className = `msg ${role}`;
 
-  // Build confidence badge for AI responses
+  // Confidence badge for AI KB responses
   let confBadge = '';
   if (role === 'ai' && confidence !== null && confidence > 0) {
     const pct = Math.round(confidence * 100);
     const cls = pct >= 80 ? 'confidence-high' : pct >= 62 ? 'confidence-mid' : 'confidence-low';
-    const icon = pct >= 80 ? '✓' : pct >= 62 ? '~' : '?';
-    const label = matchType === 'exact' ? '100% exact' : `${pct}% match`;
+    const icon = matchType === 'exact' || matchType === 'substring' ? '✓' : '~';
+    const label = (matchType === 'exact' || matchType === 'substring') ? 'exact match' : `${pct}% similar`;
     confBadge = `<span class="confidence-badge ${cls}">${icon} ${label}</span>`;
+  }
+
+  // Matched question reference (only for fuzzy KB hits)
+  let matchedRef = '';
+  if (role === 'ai' && matchedQuestion && matchType === 'fuzzy') {
+    matchedRef = `<div class="matched-ref">🔍 Matched: <em>"${matchedQuestion}"</em></div>`;
   }
 
   div.innerHTML = `
     <div class="msg-avatar ${role === 'ai' ? 'ai-av' : 'visitor-av'}">${role === 'ai' ? 'SW' : 'V'}</div>
     <div>
-      <div class="msg-bubble">${text}${confBadge}</div>
+      <div class="msg-bubble">${text}${confBadge}${matchedRef}</div>
       <div class="msg-meta">${name || (role==='ai' ? 'Swagata' : 'Visitor')} · ${now}</div>
     </div>`;
   feed.appendChild(div);
@@ -1103,7 +1121,7 @@ async function sendVisitorQuery() {
 
     showTyping(false);
     const senderName = data.source === 'knowledge_base' ? 'Swagata' : 'Swagata · AI Assist';
-    addMessage('ai', data.answer, senderName, data.confidence || null, data.match_type || null);
+    addMessage('ai', data.answer, senderName, data.confidence || null, data.match_type || null, data.matched_question || null);
 
     if (data.source === 'ai_fallback') {
       document.getElementById('fallbackBadge').style.display = 'flex';

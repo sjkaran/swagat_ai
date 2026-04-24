@@ -19,6 +19,7 @@ import scipy.signal
 # ==========================================
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
+from rapidfuzz import fuzz
 from langdetect import detect, DetectorFactory
 DetectorFactory.seed = 42  # Make langdetect deterministic
 
@@ -184,93 +185,206 @@ def detect_language(text: str) -> str:
     return 'en'
 
 # ==========================================
-# 4. FUZZY QUERY MATCHING ENGINE
+# 4. MULTI-SIGNAL QUERY MATCHING ENGINE
 # ==========================================
 
-SIMILARITY_THRESHOLD = 0.62  # 62% minimum cosine similarity
+# Threshold: a combined score below this goes to AI fallback
+SIMILARITY_THRESHOLD = 0.52
+
+# Common question words to strip before comparison (English + Odia + Hindi)
+STOPWORDS = {
+    'what', 'where', 'when', 'how', 'which', 'who', 'is', 'are', 'the',
+    'a', 'an', 'do', 'does', 'can', 'i', 'me', 'my', 'tell', 'please',
+    'your', 'you', 'of', 'for', 'in', 'to', 'and', 'or', 'at', 'this',
+    'that', 'get', 'find', 'know', 'much', 'many', 'there', 'any',
+    # Hindi stopwords
+    'क्या', 'कहाँ', 'कब', 'कैसे', 'कौन', 'है', 'हैं', 'मैं', 'मुझे',
+    'आप', 'का', 'की', 'के', 'से', 'में', 'को', 'और', 'या', 'बताइए',
+    'कितना', 'कितनी', 'मिलेगा', 'मिलती', 'होता', 'होती',
+    # Odia stopwords
+    'କଣ', 'କେଉଁ', 'କେତେ', 'କିପରି', 'ଆପଣ', 'ମୁଁ', 'ଏହା', 'ସେ',
+    'ଆଉ', 'ବା', 'ରେ', 'ର', 'ଟି', 'ଟା',
+}
 
 def normalize_text(text: str) -> str:
-    """Lowercase, strip punctuation for fair comparison."""
+    """Lowercase, strip punctuation, collapse whitespace."""
     text = text.lower().strip()
+    # Keep Odia (U+0B00-U+0B7F), Devanagari (U+0900-U+097F), word chars, spaces
     text = re.sub(r'[^\w\s\u0B00-\u0B7F\u0900-\u097F]', ' ', text)
     text = re.sub(r'\s+', ' ', text)
     return text
 
-def token_overlap_score(query: str, candidate: str) -> float:
-    """Jaccard-style token overlap for short strings where TF-IDF is unreliable."""
-    q_tokens = set(normalize_text(query).split())
-    c_tokens = set(normalize_text(candidate).split())
+def remove_stopwords(text: str) -> str:
+    """Strip common filler/question words so content words are compared."""
+    tokens = normalize_text(text).split()
+    filtered = [t for t in tokens if t not in STOPWORDS]
+    return ' '.join(filtered) if filtered else normalize_text(text)
+
+def keyword_overlap_score(query: str, candidate: str) -> float:
+    """
+    Jaccard overlap on content keywords (stopwords removed).
+    Handles cases like 'ticket price' vs 'How much does a ticket cost?' — 
+    shares 'ticket' → good signal.
+    """
+    q_tokens = set(remove_stopwords(query).split())
+    c_tokens = set(remove_stopwords(candidate).split())
     if not q_tokens or not c_tokens:
         return 0.0
     intersection = q_tokens & c_tokens
-    union = q_tokens | c_tokens
-    return len(intersection) / len(union)
+    # Use smaller set as denominator — rewards partial coverage
+    smaller = min(len(q_tokens), len(c_tokens))
+    return len(intersection) / smaller if smaller > 0 else 0.0
+
+def tfidf_cosine_score(query: str, questions: list) -> list:
+    """
+    TF-IDF char n-gram cosine similarity.
+    Returns a list of float scores aligned with `questions`.
+    Falls back to zeros on error (e.g. single-item KB).
+    """
+    if not questions:
+        return []
+    try:
+        corpus = [query] + questions
+        vectorizer = TfidfVectorizer(
+            analyzer='char_wb',
+            ngram_range=(2, 4),
+            min_df=1,
+            sublinear_tf=True
+        )
+        matrix = vectorizer.fit_transform(corpus)
+        scores = cosine_similarity(matrix[0], matrix[1:]).flatten()
+        return [float(s) for s in scores]
+    except Exception as e:
+        print(f"[TF-IDF] Error: {e}")
+        return [0.0] * len(questions)
+
+def is_indic(text: str) -> bool:
+    """Returns True if text contains significant Odia or Devanagari characters."""
+    indic_chars = len(re.findall(r'[\u0900-\u097F\u0B00-\u0B7F]', text))
+    return indic_chars > 1
+
+def score_entry(query_norm: str, query_kw: str, candidate_norm: str, candidate_kw: str) -> float:
+    """
+    Compute a single combined score for one (query, candidate) pair using
+    4 independent signals. Each is normalised to [0, 1].
+
+    For Indic scripts (Odia/Hindi), partial_ratio weight is boosted because:
+    - Indic words share root characters even when synonyms differ
+    - Word boundary splitting is less reliable for agglutinative Indic morphology
+
+    Signal breakdown (Latin):
+      1. token_set_ratio   — reordered / paraphrased queries    (weight 0.35)
+      2. partial_ratio     — substring / keyword presence        (weight 0.25)
+      3. keyword_overlap   — content-word matching               (weight 0.25)
+      4. token_sort_ratio  — word-order invariant ratio          (weight 0.15)
+
+    Signal breakdown (Indic):
+      1. partial_ratio     — char-level substring overlap        (weight 0.45)
+      2. token_set_ratio   — reordering                         (weight 0.30)
+      3. keyword_overlap   — root word matching                  (weight 0.15)
+      4. token_sort_ratio  — order invariant                     (weight 0.10)
+    """
+    s1 = fuzz.token_set_ratio(query_norm, candidate_norm) / 100.0
+    s2 = fuzz.partial_ratio(query_norm, candidate_norm) / 100.0
+    s3 = keyword_overlap_score(query_kw, candidate_kw)
+    s4 = fuzz.token_sort_ratio(query_norm, candidate_norm) / 100.0
+
+    if is_indic(query_norm) or is_indic(candidate_norm):
+        # Boost partial_ratio for Indic scripts
+        return 0.45 * s2 + 0.30 * s1 + 0.15 * s3 + 0.10 * s4
+    else:
+        return 0.35 * s1 + 0.25 * s2 + 0.25 * s3 + 0.15 * s4
 
 def find_best_kb_match(user_query: str, kb_items: list, language_filter: str = None) -> dict | None:
     """
-    Find the best matching KB entry using a hybrid scoring approach:
-    - TF-IDF cosine similarity (semantic closeness)
-    - Token overlap (Jaccard, robust for short/noisy queries)
-    - Combined score with equal weighting
-    Returns the best match dict or None if below threshold.
+    Full matching pipeline:
+
+    Pass 1 — Exact / substring match (instant, score = 1.0)
+    Pass 2 — Multi-signal fuzzy scoring on language-filtered items
+    Pass 3 — If nothing clears threshold, retry across all languages
+    Pass 4 — TF-IDF re-rank the top-5 candidates as a final tiebreaker
+
+    Returns a result dict: { item, score, match_type, signals } or None.
     """
     if not kb_items:
         return None
 
-    # Filter by language if specified (but also search cross-language as fallback)
-    lang_items = [item for item in kb_items if not language_filter or item['language'] == language_filter]
-    search_items = lang_items if lang_items else list(kb_items)
+    # Decide search pool: prefer matching language, fall back to all
+    if language_filter:
+        lang_items = [item for item in kb_items if item['language'] == language_filter]
+        search_pool = lang_items if lang_items else list(kb_items)
+    else:
+        search_pool = list(kb_items)
 
-    normalized_query = normalize_text(user_query)
-    questions = [normalize_text(item['question']) for item in search_items]
+    query_norm = normalize_text(user_query)
+    query_kw   = remove_stopwords(user_query)
 
-    # --- Exact / substring match (highest priority) ---
-    for i, (item, norm_q) in enumerate(zip(search_items, questions)):
-        if norm_q in normalized_query or normalized_query in norm_q:
-            return {'item': dict(item), 'score': 1.0, 'match_type': 'exact'}
+    # ── PASS 1: Exact / substring match ──────────────────────────────────────
+    for item in search_pool:
+        cand_norm = normalize_text(item['question'])
+        if cand_norm == query_norm:
+            return _result(item, 1.0, 'exact', {})
+        if cand_norm in query_norm or query_norm in cand_norm:
+            return _result(item, 0.97, 'substring', {})
 
-    # --- TF-IDF Cosine Similarity ---
-    best_idx = -1
-    best_score = 0.0
-
-    try:
-        corpus = [normalized_query] + questions
-        vectorizer = TfidfVectorizer(
-            analyzer='char_wb',   # Character n-gram: handles spelling variants & Odia phonetics
-            ngram_range=(2, 4),   # Bi to quad-grams
-            min_df=1,
-            sublinear_tf=True
-        )
-        tfidf_matrix = vectorizer.fit_transform(corpus)
-        query_vec = tfidf_matrix[0]
-        kb_vecs = tfidf_matrix[1:]
-        cos_scores = cosine_similarity(query_vec, kb_vecs).flatten()
-
-        for i, (cos_score, item, norm_q) in enumerate(zip(cos_scores, search_items, questions)):
-            tok_score = token_overlap_score(normalized_query, norm_q)
-            # Weighted hybrid: 60% TF-IDF, 40% token overlap
-            hybrid = 0.60 * float(cos_score) + 0.40 * tok_score
-            if hybrid > best_score:
-                best_score = hybrid
-                best_idx = i
-
-    except Exception as e:
-        print(f"TF-IDF Error: {e}")
-        # Fallback to pure token overlap
-        for i, (item, norm_q) in enumerate(zip(search_items, questions)):
-            score = token_overlap_score(normalized_query, norm_q)
-            if score > best_score:
-                best_score = score
-                best_idx = i
-
-    if best_idx >= 0 and best_score >= SIMILARITY_THRESHOLD:
-        return {
-            'item': dict(search_items[best_idx]),
-            'score': round(best_score, 3),
-            'match_type': 'fuzzy'
+    # ── PASS 2: Per-candidate multi-signal scoring ────────────────────────────
+    scored = []
+    for item in search_pool:
+        cand_norm = normalize_text(item['question'])
+        cand_kw   = remove_stopwords(item['question'])
+        combined  = score_entry(query_norm, query_kw, cand_norm, cand_kw)
+        signals   = {
+            'token_set': round(fuzz.token_set_ratio(query_norm, cand_norm) / 100, 3),
+            'partial':   round(fuzz.partial_ratio(query_norm, cand_norm) / 100, 3),
+            'keyword':   round(keyword_overlap_score(query_kw, cand_kw), 3),
+            'token_sort':round(fuzz.token_sort_ratio(query_norm, cand_norm) / 100, 3),
         }
+        scored.append((combined, item, signals))
 
-    return None
+    scored.sort(key=lambda x: x[0], reverse=True)
+    best_score, best_item, best_signals = scored[0]
+
+    # ── PASS 3: Cross-language retry if nothing good enough ───────────────────
+    if best_score < SIMILARITY_THRESHOLD and language_filter:
+        cross_pool = [i for i in kb_items if i['language'] != language_filter]
+        for item in cross_pool:
+            cand_norm = normalize_text(item['question'])
+            cand_kw   = remove_stopwords(item['question'])
+            combined  = score_entry(query_norm, query_kw, cand_norm, cand_kw)
+            if combined > best_score:
+                best_score = combined
+                best_item  = item
+                best_signals = {'cross_lang': True}
+
+    if best_score < SIMILARITY_THRESHOLD:
+        print(f"[Matcher] No match for '{user_query[:40]}' (best={best_score:.2f})")
+        return None
+
+    # ── PASS 4: TF-IDF re-rank the top-5 candidates ──────────────────────────
+    top5 = scored[:5]
+    top5_questions = [normalize_text(i['question']) for _, i, _ in top5]
+    tfidf_scores = tfidf_cosine_score(query_norm, top5_questions)
+
+    # Blend TF-IDF boost (15%) into top-5 scores to break ties
+    reranked = [
+        (score + 0.15 * tf, item, sigs)
+        for (score, item, sigs), tf in zip(top5, tfidf_scores)
+    ]
+    reranked.sort(key=lambda x: x[0], reverse=True)
+    final_score, final_item, final_sigs = reranked[0]
+    final_score = min(final_score, 1.0)  # Cap at 100%
+
+    match_type = 'exact' if final_score >= 0.97 else 'fuzzy'
+    print(f"[Matcher] '{user_query[:40]}' → '{final_item['question'][:40]}' score={final_score:.2f}")
+    return _result(final_item, round(final_score, 3), match_type, final_sigs)
+
+def _result(item, score, match_type, signals):
+    return {
+        'item': dict(item),
+        'score': score,
+        'match_type': match_type,
+        'signals': signals
+    }
 
 # ==========================================
 # 5. AI FALLBACK MODULE
@@ -393,27 +507,18 @@ def ask_assistant():
     conn = get_db_connection()
     kb_items = conn.execute('SELECT * FROM knowledge_base').fetchall()
 
-    # ENHANCEMENT 2: Fuzzy matching with similarity threshold
+    # Multi-signal fuzzy match — language-aware first, cross-language fallback built-in
     match = find_best_kb_match(user_query, kb_items, language_filter=language)
 
     if match:
         conn.close()
         return jsonify({
             "answer": match['item']['answer'],
+            "matched_question": match['item']['question'],   # The KB question that matched
             "source": "knowledge_base",
             "match_type": match['match_type'],
-            "confidence": match['score']
-        })
-
-    # No match — try cross-language search
-    cross_match = find_best_kb_match(user_query, kb_items, language_filter=None)
-    if cross_match:
-        conn.close()
-        return jsonify({
-            "answer": cross_match['item']['answer'],
-            "source": "knowledge_base",
-            "match_type": "cross_language_fuzzy",
-            "confidence": cross_match['score']
+            "confidence": match['score'],
+            "signals": match.get('signals', {})
         })
 
     profile = conn.execute('SELECT * FROM business_profile LIMIT 1').fetchone()
