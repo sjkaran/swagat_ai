@@ -3,31 +3,40 @@ from flask_cors import CORS
 import sqlite3
 import os
 import io
+import re
 import numpy as np
 import torch
 from transformers import AutoModelForCTC, AutoProcessor, VitsModel, AutoTokenizer
 import sounddevice as sd
 import threading
 import time
-import queue 
-import difflib
+import queue
+import scipy.io.wavfile
+import scipy.signal
+
+# ==========================================
+# FUZZY MATCHING & LANGUAGE DETECTION IMPORTS
+# ==========================================
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.metrics.pairwise import cosine_similarity
+from langdetect import detect, DetectorFactory
+DetectorFactory.seed = 42  # Make langdetect deterministic
 
 app = Flask(__name__)
 CORS(app)
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DB_NAME = os.path.join(BASE_DIR, "swagat_ai.db")
-import scipy.io.wavfile
 
 # ==========================================
 # 0. INITIALIZE ODIA AI ENGINES
 # ==========================================
 print("Loading Odia AI Engines... This may take a moment.")
 try:
-    with open(os.path.join(BASE_DIR,"source.txt"), "r") as key:
+    with open(os.path.join(BASE_DIR, "source.txt"), "r") as key:
         HF_TOKEN = key.readline().strip()
 except FileNotFoundError:
-    print("WARNING: API_KEY.txt not found. Models may fail to download.")
+    print("WARNING: source.txt not found. Models may fail to download.")
     HF_TOKEN = None
 
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
@@ -47,8 +56,17 @@ print(f"Odia Engines Ready on {DEVICE}!")
 def init_db():
     conn = sqlite3.connect(DB_NAME)
     cursor = conn.cursor()
-    cursor.execute('''CREATE TABLE IF NOT EXISTS knowledge_base (id INTEGER PRIMARY KEY AUTOINCREMENT, question TEXT NOT NULL, answer TEXT NOT NULL, language TEXT NOT NULL)''')
-    cursor.execute('''CREATE TABLE IF NOT EXISTS business_profile (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, biz_type TEXT NOT NULL)''')
+    cursor.execute('''CREATE TABLE IF NOT EXISTS knowledge_base (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        question TEXT NOT NULL,
+        answer TEXT NOT NULL,
+        language TEXT NOT NULL
+    )''')
+    cursor.execute('''CREATE TABLE IF NOT EXISTS business_profile (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT NOT NULL,
+        biz_type TEXT NOT NULL
+    )''')
     conn.commit()
     conn.close()
 
@@ -61,28 +79,220 @@ def get_db_connection():
     return conn
 
 # ==========================================
-# 2. AI FALLBACK MODULE
+# 2. ENHANCED AUDIO PRE-PROCESSING
+# ==========================================
+def preprocess_audio(audio_np: np.ndarray, sr: int = 16000) -> np.ndarray:
+    """
+    Apply noise-reduction pipeline before passing to wav2vec:
+    1. Convert stereo → mono (safety)
+    2. Highpass filter at 80Hz to kill low-frequency rumble
+    3. Spectral subtraction for background noise removal
+    4. Voice Activity Detection (VAD) trim to drop silent edges
+    5. Normalize amplitude
+    """
+    # Step 1: Ensure mono float32
+    if audio_np.ndim > 1:
+        audio_np = audio_np.mean(axis=1)
+    audio_np = audio_np.astype(np.float32)
+
+    # Step 2: Highpass filter (80 Hz cutoff) — removes rumble & mic pop
+    b, a = scipy.signal.butter(4, 80 / (sr / 2), btype='high')
+    audio_np = scipy.signal.filtfilt(b, a, audio_np)
+
+    # Step 3: Spectral subtraction (simple but effective noise gate)
+    # Estimate noise profile from first 200ms of audio (assumed silence/pre-speech)
+    noise_samples = min(int(0.2 * sr), len(audio_np) // 4)
+    if noise_samples > 0:
+        noise_profile = np.abs(np.fft.rfft(audio_np[:noise_samples]))
+        n_fft = len(audio_np)
+        spectrum = np.fft.rfft(audio_np, n=n_fft)
+        magnitude = np.abs(spectrum)
+        phase = np.angle(spectrum)
+        # Pad noise profile to match spectrum length
+        noise_pad = np.pad(noise_profile, (0, len(magnitude) - len(noise_profile)), 'edge')
+        # Subtract noise floor with over-subtraction factor α=2.0
+        alpha = 2.0
+        cleaned_magnitude = np.maximum(magnitude - alpha * noise_pad, 0.01 * magnitude)
+        audio_np = np.fft.irfft(cleaned_magnitude * np.exp(1j * phase), n=n_fft)
+        audio_np = audio_np[:len(audio_np)]
+
+    # Step 4: VAD trim — remove leading/trailing silence
+    # Frame-based energy threshold
+    frame_len = int(0.02 * sr)  # 20ms frames
+    hop = frame_len // 2
+    energies = np.array([
+        np.mean(audio_np[i:i+frame_len] ** 2)
+        for i in range(0, len(audio_np) - frame_len, hop)
+    ])
+    if len(energies) > 0:
+        threshold = np.percentile(energies, 15) * 6  # 6x noise floor
+        voiced = np.where(energies > threshold)[0]
+        if len(voiced) > 0:
+            start = max(0, voiced[0] * hop - frame_len)
+            end = min(len(audio_np), voiced[-1] * hop + frame_len * 3)
+            audio_np = audio_np[start:end]
+
+    # Step 5: Normalize to [-1, 1]
+    max_val = np.abs(audio_np).max()
+    if max_val > 1e-6:
+        audio_np = audio_np / max_val * 0.95
+
+    return audio_np
+
+# ==========================================
+# 3. AUTO LANGUAGE DETECTION
+# ==========================================
+
+# Odia Unicode block: U+0B00–U+0B7F
+ODIA_UNICODE_PATTERN = re.compile(r'[\u0B00-\u0B7F]')
+# Devanagari block (Hindi): U+0900–U+097F
+DEVANAGARI_PATTERN = re.compile(r'[\u0900-\u097F]')
+
+def detect_language(text: str) -> str:
+    """
+    Detect language from transcribed text.
+    Returns ISO code: 'or' (Odia), 'hi' (Hindi), 'en' (English)
+    Priority: Script-based check first (fast & reliable) → langdetect fallback
+    """
+    if not text or len(text.strip()) < 2:
+        return 'en'  # Default
+
+    # Fast script-based detection (most reliable for Indian scripts)
+    odia_chars = len(ODIA_UNICODE_PATTERN.findall(text))
+    hindi_chars = len(DEVANAGARI_PATTERN.findall(text))
+    total_chars = len(text.replace(' ', ''))
+
+    if total_chars > 0:
+        if odia_chars / total_chars > 0.3:
+            return 'or'
+        if hindi_chars / total_chars > 0.3:
+            return 'hi'
+
+    # Fallback: langdetect for Roman script (English detection)
+    try:
+        detected = detect(text)
+        if detected in ('or', 'hi', 'en'):
+            return detected
+        # langdetect may return 'bn' for some Odia text — remap
+        if detected == 'bn' and odia_chars > 0:
+            return 'or'
+        if detected in ('mr', 'ne') and hindi_chars > 0:
+            return 'hi'
+    except Exception:
+        pass
+
+    return 'en'
+
+# ==========================================
+# 4. FUZZY QUERY MATCHING ENGINE
+# ==========================================
+
+SIMILARITY_THRESHOLD = 0.62  # 62% minimum cosine similarity
+
+def normalize_text(text: str) -> str:
+    """Lowercase, strip punctuation for fair comparison."""
+    text = text.lower().strip()
+    text = re.sub(r'[^\w\s\u0B00-\u0B7F\u0900-\u097F]', ' ', text)
+    text = re.sub(r'\s+', ' ', text)
+    return text
+
+def token_overlap_score(query: str, candidate: str) -> float:
+    """Jaccard-style token overlap for short strings where TF-IDF is unreliable."""
+    q_tokens = set(normalize_text(query).split())
+    c_tokens = set(normalize_text(candidate).split())
+    if not q_tokens or not c_tokens:
+        return 0.0
+    intersection = q_tokens & c_tokens
+    union = q_tokens | c_tokens
+    return len(intersection) / len(union)
+
+def find_best_kb_match(user_query: str, kb_items: list, language_filter: str = None) -> dict | None:
+    """
+    Find the best matching KB entry using a hybrid scoring approach:
+    - TF-IDF cosine similarity (semantic closeness)
+    - Token overlap (Jaccard, robust for short/noisy queries)
+    - Combined score with equal weighting
+    Returns the best match dict or None if below threshold.
+    """
+    if not kb_items:
+        return None
+
+    # Filter by language if specified (but also search cross-language as fallback)
+    lang_items = [item for item in kb_items if not language_filter or item['language'] == language_filter]
+    search_items = lang_items if lang_items else list(kb_items)
+
+    normalized_query = normalize_text(user_query)
+    questions = [normalize_text(item['question']) for item in search_items]
+
+    # --- Exact / substring match (highest priority) ---
+    for i, (item, norm_q) in enumerate(zip(search_items, questions)):
+        if norm_q in normalized_query or normalized_query in norm_q:
+            return {'item': dict(item), 'score': 1.0, 'match_type': 'exact'}
+
+    # --- TF-IDF Cosine Similarity ---
+    best_idx = -1
+    best_score = 0.0
+
+    try:
+        corpus = [normalized_query] + questions
+        vectorizer = TfidfVectorizer(
+            analyzer='char_wb',   # Character n-gram: handles spelling variants & Odia phonetics
+            ngram_range=(2, 4),   # Bi to quad-grams
+            min_df=1,
+            sublinear_tf=True
+        )
+        tfidf_matrix = vectorizer.fit_transform(corpus)
+        query_vec = tfidf_matrix[0]
+        kb_vecs = tfidf_matrix[1:]
+        cos_scores = cosine_similarity(query_vec, kb_vecs).flatten()
+
+        for i, (cos_score, item, norm_q) in enumerate(zip(cos_scores, search_items, questions)):
+            tok_score = token_overlap_score(normalized_query, norm_q)
+            # Weighted hybrid: 60% TF-IDF, 40% token overlap
+            hybrid = 0.60 * float(cos_score) + 0.40 * tok_score
+            if hybrid > best_score:
+                best_score = hybrid
+                best_idx = i
+
+    except Exception as e:
+        print(f"TF-IDF Error: {e}")
+        # Fallback to pure token overlap
+        for i, (item, norm_q) in enumerate(zip(search_items, questions)):
+            score = token_overlap_score(normalized_query, norm_q)
+            if score > best_score:
+                best_score = score
+                best_idx = i
+
+    if best_idx >= 0 and best_score >= SIMILARITY_THRESHOLD:
+        return {
+            'item': dict(search_items[best_idx]),
+            'score': round(best_score, 3),
+            'match_type': 'fuzzy'
+        }
+
+    return None
+
+# ==========================================
+# 5. AI FALLBACK MODULE
 # ==========================================
 def generate_ai_fallback_response(user_query, biz_context):
     return "I am currently unable to connect to my AI fallback brain. Please contact the staff directly."
 
 # ==========================================
-# 3. ODIA AI ENDPOINTS (Hardware Mic Control)
+# 6. ODIA AI ENDPOINTS (Hardware Mic Control)
 # ==========================================
 odia_mic_state = {"is_recording": False}
 audio_queue = queue.Queue()
 
 def record_audio_task():
-    """Background thread capturing pure, raw mic audio exactly like multi_lingual.py"""
+    """Background thread capturing pure, raw mic audio."""
     def callback(indata, frames, time, status):
         if status:
             print(f"Mic Status: {status}")
         if odia_mic_state["is_recording"]:
-            # Safely capture chunks into the queue without dropping data
             audio_queue.put(indata.copy())
 
     try:
-        # 16kHz float32 is the exact raw format the wav2vec model natively expects
         with sd.InputStream(samplerate=16000, channels=1, dtype='float32', callback=callback):
             while odia_mic_state["is_recording"]:
                 sd.sleep(100)
@@ -94,113 +304,126 @@ def record_audio_task():
 def start_odia_listen():
     if odia_mic_state["is_recording"]:
         return jsonify({"status": "already recording"})
-    
+
     odia_mic_state["is_recording"] = True
-    
-    # Clear the queue to ensure no leftover audio from the last tap
     while not audio_queue.empty():
         audio_queue.get()
-        
+
     threading.Thread(target=record_audio_task, daemon=True).start()
     return jsonify({"status": "started"})
 
 @app.route('/api/listen/odia/stop', methods=['POST'])
 def stop_odia_listen():
     odia_mic_state["is_recording"] = False
-    time.sleep(0.3) 
-    
+    time.sleep(0.3)
+
     frames = []
     while not audio_queue.empty():
         frames.append(audio_queue.get())
-        
+
     if not frames:
-        return jsonify({"text": ""})
-        
+        return jsonify({"text": "", "detected_lang": "or"})
+
+    # Stitch raw chunks
     audio_np = np.concatenate(frames, axis=0)
     audio_np = np.squeeze(audio_np)
-    
-    # --- NEW ACCURACY FIX: Z-Score Normalization ---
-    # This mathematically perfectly levels your voice volume so the AI doesn't hear static
-    if np.std(audio_np) > 0:
-        audio_np = (audio_np - np.mean(audio_np)) / np.std(audio_np)
-    # -----------------------------------------------
-    
+
+    # ENHANCEMENT 1: Apply noise reduction & VAD before sending to model
+    audio_np = preprocess_audio(audio_np, sr=16000)
+
+    if len(audio_np) < 800:  # Less than 50ms — too short, skip
+        return jsonify({"text": "", "detected_lang": "or"})
+
+    # Pass cleaned audio to wav2vec
     inputs = stt_proc(audio_np, sampling_rate=16000, return_tensors="pt").input_values.to(DEVICE)
     with torch.no_grad():
         logits = stt_model(inputs).logits
-        
+
     pred_ids = torch.argmax(logits, dim=-1)
     text = stt_proc.batch_decode(pred_ids, skip_special_tokens=True)[0]
-    
-    return jsonify({"text": text})
 
+    # ENHANCEMENT 3: Detect actual language of transcribed text
+    detected_lang = detect_language(text)
+
+    return jsonify({"text": text, "detected_lang": detected_lang})
+
+# ==========================================
+# GENERIC STT ENDPOINT (for Web Speech API results)
+# ENHANCEMENT 3: Auto-detect language from any transcription
+# ==========================================
+@app.route('/api/detect-lang', methods=['POST'])
+def detect_lang_endpoint():
+    """Given transcribed text, return detected language code."""
+    text = request.json.get("text", "")
+    detected = detect_language(text)
+    return jsonify({"detected_lang": detected})
 
 @app.route('/api/tts/odia', methods=['POST'])
 def tts_odia():
     text = request.json.get("text", "").strip()
-    
-    # CRASH FIX: If text is empty, return a tiny 10ms silent audio file instead of crashing VITS
+
     if not text:
         wav_io = io.BytesIO()
         scipy.io.wavfile.write(wav_io, rate=16000, data=np.zeros(160, dtype=np.int16))
         wav_io.seek(0)
         return send_file(wav_io, mimetype="audio/wav")
-        
+
     inputs = tts_tok(text, return_tensors="pt").to(DEVICE)
     with torch.no_grad():
         output_audio = tts_model(**inputs).waveform[0].cpu().numpy()
-        
+
     wav_io = io.BytesIO()
     scipy.io.wavfile.write(wav_io, rate=tts_model.config.sampling_rate, data=output_audio)
     wav_io.seek(0)
-    
     return send_file(wav_io, mimetype="audio/wav")
 
-
 # ==========================================
-# 4. STANDARD ENDPOINTS
+# 7. STANDARD ENDPOINTS
 # ==========================================
 @app.route('/')
-def serve_frontend(): return send_file('index.html')
+def serve_frontend():
+    return send_file('index.html')
 
 @app.route('/api/ask', methods=['POST'])
 def ask_assistant():
     data = request.json
-    user_query = data.get('query', '').lower().strip()
+    user_query = data.get('query', '').strip()
     language = data.get('language', 'en')
-    
+
     conn = get_db_connection()
-    kb_items = conn.execute('SELECT * FROM knowledge_base WHERE language = ?', (language,)).fetchall()
-    
-    best_match = None
-    highest_ratio = 0.0
-    
-    for item in kb_items:
-        db_q = item['question'].lower()
-        
-        # Exact or Substring match (100% guarantee)
-        if db_q in user_query or user_query in db_q:
-            best_match = item
-            highest_ratio = 1.0
-            break
-            
-        # FUZZY MATCHING (Calculates similarity percentage)
-        ratio = difflib.SequenceMatcher(None, user_query, db_q).ratio()
-        if ratio > highest_ratio:
-            highest_ratio = ratio
-            best_match = item
-            
+    kb_items = conn.execute('SELECT * FROM knowledge_base').fetchall()
+
+    # ENHANCEMENT 2: Fuzzy matching with similarity threshold
+    match = find_best_kb_match(user_query, kb_items, language_filter=language)
+
+    if match:
+        conn.close()
+        return jsonify({
+            "answer": match['item']['answer'],
+            "source": "knowledge_base",
+            "match_type": match['match_type'],
+            "confidence": match['score']
+        })
+
+    # No match — try cross-language search
+    cross_match = find_best_kb_match(user_query, kb_items, language_filter=None)
+    if cross_match:
+        conn.close()
+        return jsonify({
+            "answer": cross_match['item']['answer'],
+            "source": "knowledge_base",
+            "match_type": "cross_language_fuzzy",
+            "confidence": cross_match['score']
+        })
+
+    profile = conn.execute('SELECT * FROM business_profile LIMIT 1').fetchone()
     conn.close()
-    
-    # If the match is 65% (0.65) or higher, use the trained answer!
-    if best_match and highest_ratio >= 0.65:
-        return jsonify({"answer": best_match['answer'], "source": "knowledge_base"})
-            
-    # Fallback AI (if below 65% match)
-    profile = get_db_connection().execute('SELECT * FROM business_profile LIMIT 1').fetchone()
-    biz_context = {"name": profile['name'] if profile else "Unknown", "type": profile['biz_type'] if profile else "Unknown"}
+    biz_context = {
+        "name": profile['name'] if profile else "Unknown",
+        "type": profile['biz_type'] if profile else "Unknown"
+    }
     ai_answer = generate_ai_fallback_response(user_query, biz_context)
-    return jsonify({"answer": ai_answer, "source": "ai_fallback"})
+    return jsonify({"answer": ai_answer, "source": "ai_fallback", "confidence": 0.0})
 
 @app.route('/api/kb', methods=['GET'])
 def get_knowledge_base():
@@ -214,7 +437,10 @@ def create_kb_entry():
     data = request.json
     conn = get_db_connection()
     cursor = conn.cursor()
-    cursor.execute('INSERT INTO knowledge_base (question, answer, language) VALUES (?, ?, ?)', (data['question'], data['answer'], data['language']))
+    cursor.execute(
+        'INSERT INTO knowledge_base (question, answer, language) VALUES (?, ?, ?)',
+        (data['question'], data['answer'], data['language'])
+    )
     conn.commit()
     new_id = cursor.lastrowid
     conn.close()
