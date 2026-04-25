@@ -1230,6 +1230,19 @@ async function removeKB(id) {
   } catch (e) {}
 }
 
+async function promoteKB(id) {
+  // Mark an AI-cached entry as permanent (ai_cached = 0)
+  try {
+    const res = await fetch(`/api/kb/${id}/promote`, { method: 'POST' });
+    if (res.ok) {
+      await fetchKB();
+      showToast('✓ Entry promoted to trained knowledge base!', 'success');
+    }
+  } catch (e) {
+    showToast('Failed to promote entry', 'danger');
+  }
+}
+
 function clearKB() {
   if (!confirm('Clear all knowledge base entries?')) return;
   showToast("Please remove entries individually or reset the DB file.", "info");
@@ -1240,14 +1253,39 @@ function renderKB() {
   if (knowledgeBase.length === 0) {
     list.innerHTML = '<div style="color:var(--muted);font-size:12px;padding:8px">No entries yet. Add some above!</div>';
   } else {
-    list.innerHTML = knowledgeBase.map(e => `
-      <div class="trained-item" title="${e.answer}">
-        <span style="flex:1">
-          <strong style="color:#E0EAF8">${e.question}</strong><br>
-          <span style="color:var(--muted);font-size:11px">${e.language.toUpperCase()} · ${e.answer.substring(0,50)}${e.answer.length>50?'…':''}</span>
-        </span>
-        <span onclick="removeKB(${e.id})" style="cursor:pointer;color:var(--muted);font-size:14px;flex-shrink:0">✕</span>
-      </div>`).join('');
+    const trained = knowledgeBase.filter(e => !e.ai_cached);
+    const cached  = knowledgeBase.filter(e => e.ai_cached);
+
+    let html = '';
+
+    if (trained.length) {
+      html += `<div style="font-size:10px;font-weight:700;color:var(--teal-glow);letter-spacing:0.8px;text-transform:uppercase;padding:6px 2px 4px">✓ Trained (${trained.length})</div>`;
+      html += trained.map(e => `
+        <div class="trained-item" title="${e.answer}">
+          <span style="flex:1">
+            <strong style="color:#E0EAF8">${e.question}</strong><br>
+            <span style="color:var(--muted);font-size:11px">${e.language.toUpperCase()} · ${e.answer.substring(0,55)}${e.answer.length>55?'…':''}</span>
+          </span>
+          <span onclick="removeKB(${e.id})" style="cursor:pointer;color:var(--muted);font-size:14px;flex-shrink:0;margin-left:6px" title="Delete">✕</span>
+        </div>`).join('');
+    }
+
+    if (cached.length) {
+      html += `<div style="font-size:10px;font-weight:700;color:var(--gold);letter-spacing:0.8px;text-transform:uppercase;padding:10px 2px 4px">✦ AI Cached (${cached.length}) — review &amp; promote</div>`;
+      html += cached.map(e => `
+        <div class="trained-item" style="border-color:rgba(240,165,0,0.2);background:rgba(240,165,0,0.04);" title="${e.answer}">
+          <span style="flex:1">
+            <strong style="color:#F5DFA0">${e.question}</strong><br>
+            <span style="color:var(--muted);font-size:11px">${e.language.toUpperCase()} · ${e.answer.substring(0,55)}${e.answer.length>55?'…':''}</span>
+          </span>
+          <span style="display:flex;gap:6px;flex-shrink:0;margin-left:6px;align-items:center">
+            <span onclick="promoteKB(${e.id})" style="cursor:pointer;font-size:10px;font-weight:600;color:var(--teal-glow);border:1px solid rgba(0,212,187,0.3);border-radius:6px;padding:2px 7px" title="Approve & make permanent">✓ Keep</span>
+            <span onclick="removeKB(${e.id})" style="cursor:pointer;color:var(--muted);font-size:13px" title="Delete">✕</span>
+          </span>
+        </div>`).join('');
+    }
+
+    list.innerHTML = html;
   }
   document.getElementById('kbCountLabel').textContent = knowledgeBase.length;
 }
@@ -1574,7 +1612,11 @@ function useHint(el) {
 
 function updateStats() {
   document.getElementById('statQueries').textContent = queryCount;
+  const trained = knowledgeBase.filter(e => !e.ai_cached).length;
+  const cached  = knowledgeBase.filter(e => e.ai_cached).length;
   document.getElementById('statKB').textContent = knowledgeBase.length;
+  document.getElementById('kbCountLabel').textContent =
+    `${knowledgeBase.length} (${trained} trained, ${cached} AI cached)`;
   const acc = queryCount > 0 ? Math.round((accurateCount / queryCount) * 100) + '%' : '—';
   document.getElementById('statAcc').textContent = acc;
 }

@@ -62,7 +62,8 @@ def init_db():
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         question TEXT NOT NULL,
         answer TEXT NOT NULL,
-        language TEXT NOT NULL
+        language TEXT NOT NULL,
+        ai_cached INTEGER DEFAULT 0
     )''')
     cursor.execute('''CREATE TABLE IF NOT EXISTS business_profile (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -72,8 +73,21 @@ def init_db():
     conn.commit()
     conn.close()
 
+def migrate_db():
+    """Safely add ai_cached column if upgrading from an older DB."""
+    conn = sqlite3.connect(DB_NAME)
+    try:
+        conn.execute('ALTER TABLE knowledge_base ADD COLUMN ai_cached INTEGER DEFAULT 0')
+        conn.commit()
+        print("[DB] Migration complete: added ai_cached column.")
+    except sqlite3.OperationalError:
+        pass  # Column already exists — nothing to do
+    finally:
+        conn.close()
+
 if not os.path.exists(DB_NAME):
     init_db()
+migrate_db()  # Safe to run every startup — no-op if already migrated
 
 def get_db_connection():
     conn = sqlite3.connect(DB_NAME)
@@ -388,198 +402,140 @@ def _result(item, score, match_type, signals):
     }
 
 # ==========================================
-# 5. AI FALLBACK — Phi-3.5-mini via HF Inference API
 # ==========================================
+# 5. AI FALLBACK -- Ollama (local, fully offline, no API key needed)
+# ==========================================
+#
+# HOW TO SET UP (one-time, ~5 minutes):
+#   1. Download Ollama from: https://ollama.com/download
+#   2. Install it, then open a NEW terminal and run:
+#        ollama pull mistral        <- 4.1 GB, best quality
+#      OR smaller:
+#        ollama pull llama3.2:3b   <- 2.0 GB, faster on weaker machines
+#   3. Ollama runs as a background service on port 11434 automatically.
+#   4. Done -- no token, no internet needed after the initial model download.
+#
+# To switch models: change OLLAMA_MODEL below to any model you have pulled.
+# List what you have: run  ollama list  in terminal.
+#
 
-# ──────────────────────────────────────────────────────────────────────────────
-# 🔑  PLACE YOUR HUGGING FACE TOKEN HERE
-#     Get one free at: https://huggingface.co/settings/tokens  (READ access is enough)
-#     The same token you already have in source.txt will work.
-#     We read it from source.txt automatically below — no change needed unless
-#     you want a separate token for the AI fallback.
-# ──────────────────────────────────────────────────────────────────────────────
-AI_FALLBACK_HF_TOKEN = HF_TOKEN   # ← Uses your source.txt token automatically.
-                                   #   To override, set: AI_FALLBACK_HF_TOKEN = "hf_xxxxxxxxxxxx"
-
-# Model choice — change to any HF-hosted instruction model if desired:
-#   "microsoft/Phi-3.5-mini-instruct"    ← DEFAULT: best quality, not gated, free
-#   "Qwen/Qwen2.5-1.5B-Instruct"         ← smaller, faster, multilingual
-#   "HuggingFaceTB/SmolLM2-1.7B-Instruct"← lightest, HF-native
-#   "meta-llama/Llama-3.2-3B-Instruct"   ← best multilingual (needs license accept)
-# ──────────────────────────────────────────────────────────────────────────────
-# Model choice
-# Confirmed FREE on HF serverless inference (no PRO needed, not gated):
-#   "mistralai/Mistral-7B-Instruct-v0.3"   ← DEFAULT — reliable, free, OpenAI-compat
-#   "HuggingFaceH4/zephyr-7b-beta"         ← alternative free option
-#   "meta-llama/Llama-3.1-8B-Instruct"     ← good quality, free tier
-# ──────────────────────────────────────────────────────────────────────────────
-AI_FALLBACK_MODEL = "mistralai/Mistral-7B-Instruct-v0.3"
-
-# ── Endpoint 1: HF Router (OpenAI-compatible chat format) ─────────────────────
-# This is the primary endpoint. Uses messages[] with system/user roles.
-HF_URL_ROUTER = (
-    f"https://router.huggingface.co/hf-inference/models/"
-    f"{AI_FALLBACK_MODEL}/v1/chat/completions"
-)
-
-# ── Endpoint 2: Classic HF Inference API (text-generation pipeline format) ────
-# Fallback. Uses a single 'inputs' string with Mistral [INST] tokens.
-# URL has NO /v1/chat/completions — just /models/{model}
-HF_URL_CLASSIC = f"https://api-inference.huggingface.co/models/{AI_FALLBACK_MODEL}"
+OLLAMA_MODEL    = "mistral"                  # change to e.g. "llama3.2:3b"
+OLLAMA_BASE_URL = "http://localhost:11434"   # Ollama default
 
 import requests as _requests  # aliased to avoid shadowing Flask's `request`
 
-# ──────────────────────────────────────────────────────────────────────────────
-# CUSTOM SYSTEM PROMPT  ← Edit this to describe your venue / business.
-# The AI uses this as its knowledge frame for every unanswered visitor query.
-# ──────────────────────────────────────────────────────────────────────────────
+# Edit this prompt to describe your venue/business:
 def build_system_prompt(biz_context: dict) -> str:
     return (
-        f"You are Swagata, a friendly AI reception assistant for "
-        f"{biz_context['name']}, a {biz_context['type']} in Odisha, India. "
+        f"You are Swagata, a warm and helpful AI reception assistant for "
+        f"{biz_context['name']}, a {biz_context['type']} located in Odisha, India. "
         f"Answer visitor questions about the venue, timings, tickets, and facilities. "
-        f"Be warm, concise (2-3 sentences max). "
-        f"Do NOT invent phone numbers, prices or dates. "
-        f"If you don't know, say so and suggest asking the front desk. "
-        f"If the visitor writes in Odia or Hindi, reply in that language."
+        f"Keep every reply to 2-3 sentences -- this is a reception kiosk. "
+        f"Do NOT invent specific details like phone numbers, prices, or dates. "
+        f"If you do not know, say so politely and suggest asking the front desk staff. "
+        f"If the visitor writes in Odia or Hindi, reply in that same language."
     )
 
 
-def _router_call(user_query: str, system_prompt: str, headers: dict) -> str:
-    """
-    Primary: router.huggingface.co — OpenAI-compatible messages[] format.
-    Returns answer string. Raises on failure.
-    """
-    payload = {
-        "model": AI_FALLBACK_MODEL,
-        "messages": [
-            {"role": "system", "content": system_prompt},
-            {"role": "user",   "content": user_query},
-        ],
-        "max_tokens": 180,
-        "temperature": 0.4,
-        "top_p": 0.85,
-        "stream": False,
-    }
-    resp = _requests.post(HF_URL_ROUTER, json=payload, headers=headers, timeout=35)
-    print(f"[AI Fallback] router → HTTP {resp.status_code}")
-    if resp.status_code != 200:
-        print(f"[AI Fallback] router body: {resp.text[:300]}")
-    resp.raise_for_status()
-    data = resp.json()
-    return data["choices"][0]["message"]["content"].strip()
+def _clean_answer(text: str) -> str:
+    """Strip role-echo prefixes the model sometimes prepends."""
+    for prefix in ("Swagata:", "Assistant:", "AI:", "Response:"):
+        if text.startswith(prefix):
+            text = text[len(prefix):].strip()
+    return text.strip()
 
 
-def _classic_call(user_query: str, system_prompt: str, headers: dict) -> str:
-    """
-    Fallback: api-inference.huggingface.co — text-generation pipeline format.
-    Mistral needs [INST] tokens in the 'inputs' string.
-    Returns answer string. Raises on failure.
-    """
-    # Mistral instruct prompt format
-    prompt = (
-        f"<s>[INST] <<SYS>>\n{system_prompt}\n<</SYS>>\n\n"
-        f"{user_query} [/INST]"
-    )
-    payload = {
-        "inputs": prompt,
-        "parameters": {
-            "max_new_tokens": 180,
-            "temperature": 0.4,
-            "top_p": 0.85,
-            "return_full_text": False,   # only return the generated part
-            "do_sample": True,
-        },
-    }
-    # Classic endpoint does not use X-Wait-For-Model header — remove it
-    classic_headers = {k: v for k, v in headers.items() if k != "X-Wait-For-Model"}
-    resp = _requests.post(HF_URL_CLASSIC, json=payload, headers=classic_headers, timeout=40)
-    print(f"[AI Fallback] classic → HTTP {resp.status_code}")
-    if resp.status_code != 200:
-        print(f"[AI Fallback] classic body: {resp.text[:300]}")
-    resp.raise_for_status()
-    data = resp.json()
-    # Classic returns a list: [{"generated_text": "..."}]
-    if isinstance(data, list):
-        return data[0]["generated_text"].strip()
-    # Some models return dict with generated_text directly
-    return data.get("generated_text", str(data)).strip()
+def _check_ollama_running() -> bool:
+    """Quick ping -- is Ollama up on localhost:11434?"""
+    try:
+        r = _requests.get(f"{OLLAMA_BASE_URL}/api/tags", timeout=3)
+        return r.status_code == 200
+    except Exception:
+        return False
 
 
 def generate_ai_fallback_response(user_query: str, biz_context: dict) -> dict:
     """
-    Call Mistral-7B-Instruct via HF Inference API.
-
-    Strategy:
-      1. Try router.huggingface.co  (OpenAI chat format — preferred)
-      2. Fall back to api-inference.huggingface.co (classic pipeline format)
-      3. On any failure: log full status + body, return graceful message
-
-    Returns dict: { answer, model, ai_source }
+    Call Ollama's OpenAI-compatible local endpoint.
+    URL: http://localhost:11434/v1/chat/completions
+    Fully offline after model download -- no token, no rate limits.
     """
-    if not AI_FALLBACK_HF_TOKEN:
-        print("[AI Fallback] No HF token configured.")
+    if not _check_ollama_running():
+        print("[AI Fallback] Ollama not detected on port 11434.")
         return {
-            "answer": "I don't have that information in my knowledge base yet. "
-                      "Please ask our staff at the front desk for assistance.",
-            "model": "none",
-            "ai_source": "no_token",
+            "answer": (
+                "My AI assistant is currently offline. "
+                "Please ensure Ollama is running (run 'ollama serve' in terminal), "
+                "then try again or ask our front desk staff."
+            ),
+            "model": OLLAMA_MODEL,
+            "ai_source": "ollama_offline",
         }
 
-    headers = {
-        "Authorization": f"Bearer {AI_FALLBACK_HF_TOKEN}",
-        "Content-Type": "application/json",
-        "X-Wait-For-Model": "true",
-        "X-Use-Cache": "false",
+    url = f"{OLLAMA_BASE_URL}/v1/chat/completions"
+    payload = {
+        "model": OLLAMA_MODEL,
+        "messages": [
+            {"role": "system", "content": build_system_prompt(biz_context)},
+            {"role": "user",   "content": user_query},
+        ],
+        "max_tokens": 200,
+        "temperature": 0.4,
+        "top_p": 0.85,
+        "stream": False,
     }
-    system_prompt = build_system_prompt(biz_context)
 
-    # ── Try router first ──────────────────────────────────────────────────────
     try:
-        answer = _router_call(user_query, system_prompt, headers)
+        print(f"[AI Fallback] Ollama POST {url} | model={OLLAMA_MODEL}")
+        resp = _requests.post(url, json=payload, timeout=60)
+        print(f"[AI Fallback] HTTP {resp.status_code}")
+
+        if resp.status_code != 200:
+            print(f"[AI Fallback] Error body: {resp.text[:400]}")
+
+        if resp.status_code == 404:
+            return {
+                "answer": (
+                    f"Model '{OLLAMA_MODEL}' is not downloaded yet. "
+                    f"Please run: ollama pull {OLLAMA_MODEL}"
+                ),
+                "model": OLLAMA_MODEL,
+                "ai_source": "model_not_found",
+            }
+
+        resp.raise_for_status()
+        data   = resp.json()
+        answer = data["choices"][0]["message"]["content"]
         answer = _clean_answer(answer)
-        print(f"[AI Fallback] ✓ router success ({len(answer)} chars)")
-        return {"answer": answer, "model": AI_FALLBACK_MODEL, "ai_source": "mistral_router"}
-    except _requests.HTTPError as e:
-        print(f"[AI Fallback] Router HTTP {e.response.status_code} — trying classic...")
+        print(f"[AI Fallback] SUCCESS ({len(answer)} chars): {answer[:100]}")
+        return {"answer": answer, "model": OLLAMA_MODEL, "ai_source": "ollama_local"}
+
+    except _requests.ConnectionError:
+        print("[AI Fallback] Connection refused -- Ollama not running.")
+        return {
+            "answer": "My local AI is not reachable. Please start Ollama and try again, or ask our staff.",
+            "model": OLLAMA_MODEL, "ai_source": "ollama_offline",
+        }
+    except _requests.Timeout:
+        print("[AI Fallback] Ollama timed out.")
+        return {
+            "answer": "The AI is taking too long. Please try again in a moment.",
+            "model": OLLAMA_MODEL, "ai_source": "ollama_timeout",
+        }
+    except (KeyError, IndexError, TypeError) as e:
+        print(f"[AI Fallback] Parse error: {e}")
+        return {
+            "answer": "I received an unexpected AI response. Please ask our front desk staff.",
+            "model": OLLAMA_MODEL, "ai_source": "parse_error",
+        }
     except Exception as e:
-        print(f"[AI Fallback] Router error: {type(e).__name__}: {e} — trying classic...")
-
-    # ── Fall back to classic ──────────────────────────────────────────────────
-    try:
-        answer = _classic_call(user_query, system_prompt, headers)
-        answer = _clean_answer(answer)
-        print(f"[AI Fallback] ✓ classic success ({len(answer)} chars)")
-        return {"answer": answer, "model": AI_FALLBACK_MODEL, "ai_source": "mistral_classic"}
-    except _requests.HTTPError as e:
-        status = e.response.status_code
-        body   = e.response.text[:400]
-        print(f"[AI Fallback] Classic HTTP {status}: {body}")
-        if status == 503:
-            return {"answer": "My AI brain is warming up — please try again in 20 seconds, or ask our staff.",
-                    "model": AI_FALLBACK_MODEL, "ai_source": "model_loading"}
-        if status == 429:
-            return {"answer": "Too many questions right now — please try again shortly or ask our staff.",
-                    "model": AI_FALLBACK_MODEL, "ai_source": "rate_limited"}
-        if status in (401, 403):
-            return {"answer": "AI token issue. Please contact the administrator.",
-                    "model": AI_FALLBACK_MODEL, "ai_source": f"auth_{status}"}
-        return {"answer": "I couldn't reach my AI brain right now. Please ask our front desk staff.",
-                "model": AI_FALLBACK_MODEL, "ai_source": f"http_{status}"}
-    except Exception as e:
-        print(f"[AI Fallback] Both endpoints failed: {type(e).__name__}: {e}")
-        return {"answer": "I'm having trouble connecting to AI right now. Please ask our staff!",
-                "model": AI_FALLBACK_MODEL, "ai_source": "network_error"}
+        print(f"[AI Fallback] Unexpected: {type(e).__name__}: {e}")
+        return {
+            "answer": "Something went wrong with AI. Please ask our staff directly.",
+            "model": OLLAMA_MODEL, "ai_source": "unknown_error",
+        }
 
 
-def _clean_answer(text: str) -> str:
-    """Strip role-echo prefixes the model sometimes adds."""
-    for prefix in ("Swagata:", "Assistant:", "AI:", "Response:", "[/INST]"):
-        if text.startswith(prefix):
-            text = text[len(prefix):].strip()
-    return text
-
-# ==========================================
 # 6. ODIA AI ENDPOINTS (Hardware Mic Control)
 # ==========================================
 odia_mic_state = {"is_recording": False}
@@ -715,24 +671,46 @@ def ask_assistant():
         "type": profile['biz_type'] if profile else "Heritage Site / Museum"
     }
 
-    # ── AI Fallback: Phi-3.5-mini via HF Inference API ──────────────────────
+    # ── AI Fallback: Ollama local model ──────────────────────────────────────
     ai_result = generate_ai_fallback_response(user_query, biz_context)
+    answer    = ai_result["answer"]
+    ai_source = ai_result["ai_source"]
+
+    # Auto-cache the AI answer into KB so repeat queries are instant.
+    # Marked as ai_cached=1 so admin can review/refine/delete it separately.
+    # Only cache genuine answers — skip error/offline/timeout responses.
+    skip_cache = {"ollama_offline", "model_not_found", "ollama_timeout",
+                  "parse_error", "unknown_error", "no_token"}
+    if ai_source not in skip_cache:
+        try:
+            cache_conn = get_db_connection()
+            cache_conn.execute(
+                'INSERT INTO knowledge_base (question, answer, language, ai_cached) VALUES (?, ?, ?, 1)',
+                (user_query, answer, language)
+            )
+            cache_conn.commit()
+            cache_conn.close()
+            print(f"[KB Cache] Saved AI answer for: '{user_query[:50]}'")
+        except Exception as e:
+            print(f"[KB Cache] Failed to save: {e}")
+
     return jsonify({
-        "answer":     ai_result["answer"],
+        "answer":     answer,
         "source":     "ai_fallback",
         "ai_model":   ai_result["model"],
-        "ai_source":  ai_result["ai_source"],
+        "ai_source":  ai_source,
         "confidence": 0.0
     })
 
 @app.route('/api/ai-status', methods=['GET'])
 def ai_status():
     """Returns current AI fallback configuration status for the frontend."""
+    ollama_running = _check_ollama_running()
     return jsonify({
-        "model": AI_FALLBACK_MODEL,
-        "token_configured": bool(AI_FALLBACK_HF_TOKEN),
-        "url_router":  HF_URL_ROUTER,
-        "url_classic": HF_URL_CLASSIC,
+        "model":          OLLAMA_MODEL,
+        "token_configured": True,          # Ollama needs no token
+        "ollama_running": ollama_running,
+        "ollama_url":     OLLAMA_BASE_URL,
     })
 
 @app.route('/api/kb', methods=['GET'])
@@ -763,6 +741,16 @@ def delete_kb_entry(item_id):
     conn.commit()
     conn.close()
     return jsonify({"status": "success", "message": "Deleted successfully"})
+
+@app.route('/api/kb/<int:item_id>/promote', methods=['POST'])
+def promote_kb_entry(item_id):
+    """Convert an AI-cached entry into a permanent trained entry (ai_cached=0)."""
+    conn = get_db_connection()
+    conn.execute('UPDATE knowledge_base SET ai_cached = 0 WHERE id = ?', (item_id,))
+    conn.commit()
+    conn.close()
+    print(f"[KB] Entry {item_id} promoted to trained.")
+    return jsonify({"status": "success"})
 
 @app.route('/api/profile', methods=['GET', 'POST'])
 def handle_profile():
