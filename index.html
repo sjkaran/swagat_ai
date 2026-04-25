@@ -533,6 +533,87 @@
   }
   .trained-item::before { content: '✓'; color: var(--teal-glow); flex-shrink: 0; font-size: 11px; margin-top: 1px; }
 
+  /* ── KB Edit Modal ── */
+  .edit-modal-overlay {
+    display: none; position: fixed; inset: 0; z-index: 300;
+    background: rgba(8,12,18,0.88);
+    backdrop-filter: blur(12px);
+    align-items: center; justify-content: center;
+  }
+  .edit-modal-overlay.active { display: flex; }
+
+  .edit-modal {
+    background: var(--night2);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 18px;
+    padding: 28px;
+    width: 100%; max-width: 520px;
+    display: flex; flex-direction: column; gap: 16px;
+    box-shadow: 0 24px 80px rgba(0,0,0,0.6);
+    animation: modalIn 0.25s cubic-bezier(0.34,1.56,0.64,1);
+  }
+  @keyframes modalIn {
+    from { opacity: 0; transform: scale(0.93) translateY(12px); }
+    to   { opacity: 1; transform: none; }
+  }
+
+  .edit-modal-title {
+    font-family: 'Baloo 2', sans-serif;
+    font-size: 17px; font-weight: 700; color: var(--white);
+    display: flex; align-items: center; gap: 10px;
+  }
+  .edit-modal-badge {
+    font-size: 10px; font-weight: 600; padding: 2px 9px;
+    border-radius: 10px;
+  }
+  .edit-modal-badge.trained { background: rgba(0,212,187,0.15); color: var(--teal-glow); border: 1px solid rgba(0,212,187,0.25); }
+  .edit-modal-badge.cached  { background: rgba(240,165,0,0.15);  color: var(--gold);      border: 1px solid rgba(240,165,0,0.25); }
+
+  .edit-field { display: flex; flex-direction: column; gap: 6px; }
+  .edit-label {
+    font-size: 10px; font-weight: 700; letter-spacing: 0.7px;
+    text-transform: uppercase; color: var(--muted);
+  }
+  .edit-input {
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 10px; padding: 10px 13px;
+    color: var(--white); font-size: 13px;
+    font-family: 'DM Sans', sans-serif;
+    outline: none; resize: vertical;
+    transition: border-color 0.2s;
+  }
+  .edit-input:focus { border-color: var(--teal-light); }
+
+  .edit-lang-row { display: flex; gap: 8px; align-items: center; }
+  .edit-lang-select {
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 10px; padding: 8px 12px;
+    color: var(--white); font-size: 13px;
+    font-family: 'DM Sans', sans-serif;
+    outline: none; flex: 1;
+  }
+
+  .edit-modal-actions {
+    display: flex; gap: 10px; justify-content: flex-end; margin-top: 4px;
+  }
+  .btn-cancel-edit {
+    padding: 9px 18px; border-radius: 10px; font-size: 13px; font-weight: 600;
+    background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1);
+    color: var(--muted); cursor: pointer; transition: all 0.2s;
+  }
+  .btn-cancel-edit:hover { background: rgba(255,255,255,0.1); color: var(--white); }
+  .btn-save-edit {
+    padding: 9px 22px; border-radius: 10px; font-size: 13px; font-weight: 600;
+    background: linear-gradient(135deg, var(--teal), var(--teal-light));
+    color: white; border: none; cursor: pointer;
+    box-shadow: 0 4px 15px rgba(0,168,150,0.3);
+    transition: all 0.2s;
+  }
+  .btn-save-edit:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(0,168,150,0.4); }
+  .btn-save-edit:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
   footer {
     text-align: center; padding: 14px 36px;
     border-top: 1px solid rgba(255,255,255,0.04);
@@ -940,6 +1021,38 @@
     </div>
   </footer>
 
+<!-- KB Edit Modal -->
+<div class="edit-modal-overlay" id="editModalOverlay">
+  <div class="edit-modal">
+    <div class="edit-modal-title">
+      ✏️ Edit Entry
+      <span class="edit-modal-badge" id="editModalBadge">trained</span>
+    </div>
+    <div class="edit-field">
+      <div class="edit-label">Question</div>
+      <textarea class="edit-input" id="editQuestion" rows="2"></textarea>
+    </div>
+    <div class="edit-field">
+      <div class="edit-label">Answer</div>
+      <textarea class="edit-input" id="editAnswer" rows="4"></textarea>
+    </div>
+    <div class="edit-field">
+      <div class="edit-label">Language</div>
+      <div class="edit-lang-row">
+        <select class="edit-lang-select" id="editLang">
+          <option value="or">Odia (ଓଡ଼ିଆ)</option>
+          <option value="hi">Hindi (हिन्दी)</option>
+          <option value="en">English</option>
+        </select>
+      </div>
+    </div>
+    <div class="edit-modal-actions">
+      <button class="btn-cancel-edit" onclick="closeEditModal()">Cancel</button>
+      <button class="btn-save-edit" id="editSaveBtn" onclick="saveKBEdit()">Save Changes</button>
+    </div>
+  </div>
+</div>
+
 </div><!-- /app-shell -->
 
 <script>
@@ -1231,7 +1344,6 @@ async function removeKB(id) {
 }
 
 async function promoteKB(id) {
-  // Mark an AI-cached entry as permanent (ai_cached = 0)
   try {
     const res = await fetch(`/api/kb/${id}/promote`, { method: 'POST' });
     if (res.ok) {
@@ -1240,6 +1352,80 @@ async function promoteKB(id) {
     }
   } catch (e) {
     showToast('Failed to promote entry', 'danger');
+  }
+}
+
+// ─── KB EDIT MODAL ────────────────────────────────────────
+let _editingId = null;
+
+function openEditModal(id) {
+  const entry = knowledgeBase.find(e => e.id === id);
+  if (!entry) return;
+
+  _editingId = id;
+
+  // Populate fields
+  document.getElementById('editQuestion').value = entry.question;
+  document.getElementById('editAnswer').value   = entry.answer;
+  document.getElementById('editLang').value     = entry.language;
+
+  // Badge: trained vs AI cached
+  const badge = document.getElementById('editModalBadge');
+  if (entry.ai_cached) {
+    badge.textContent  = '✦ AI Cached';
+    badge.className    = 'edit-modal-badge cached';
+  } else {
+    badge.textContent  = '✓ Trained';
+    badge.className    = 'edit-modal-badge trained';
+  }
+
+  document.getElementById('editSaveBtn').disabled = false;
+  document.getElementById('editModalOverlay').classList.add('active');
+  document.getElementById('editQuestion').focus();
+}
+
+function closeEditModal() {
+  _editingId = null;
+  document.getElementById('editModalOverlay').classList.remove('active');
+}
+
+async function saveKBEdit() {
+  if (!_editingId) return;
+
+  const question = document.getElementById('editQuestion').value.trim();
+  const answer   = document.getElementById('editAnswer').value.trim();
+  const language = document.getElementById('editLang').value;
+
+  if (!question || !answer) {
+    showToast('Question and answer cannot be empty.', 'info');
+    return;
+  }
+
+  const btn = document.getElementById('editSaveBtn');
+  btn.disabled = true;
+  btn.textContent = 'Saving...';
+
+  try {
+    const res = await fetch(`/api/kb/${_editingId}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ question, answer, language })
+    });
+
+    if (res.ok) {
+      await fetchKB();
+      updateStats();
+      closeEditModal();
+      showToast('✓ Entry updated successfully!', 'success');
+    } else {
+      showToast('Failed to save changes.', 'danger');
+      btn.disabled = false;
+      btn.textContent = 'Save Changes';
+    }
+  } catch (e) {
+    showToast('Network error — changes not saved.', 'danger');
+    btn.disabled = false;
+    btn.textContent = 'Save Changes';
   }
 }
 
@@ -1256,32 +1442,40 @@ function renderKB() {
     const trained = knowledgeBase.filter(e => !e.ai_cached);
     const cached  = knowledgeBase.filter(e => e.ai_cached);
 
+    // Shared action buttons builder
+    const actions = (e) => {
+      const isCached = e.ai_cached;
+      return `
+        <span style="display:flex;gap:5px;flex-shrink:0;margin-left:6px;align-items:center">
+          ${isCached ? `<span onclick="promoteKB(${e.id})" style="cursor:pointer;font-size:10px;font-weight:600;color:var(--teal-glow);border:1px solid rgba(0,212,187,0.3);border-radius:6px;padding:2px 7px" title="Approve & make permanent">✓ Keep</span>` : ''}
+          <span onclick="openEditModal(${e.id})" style="cursor:pointer;font-size:12px;color:var(--muted);padding:2px 5px;border-radius:5px;border:1px solid rgba(255,255,255,0.08)" title="Edit this entry">✏️</span>
+          <span onclick="removeKB(${e.id})" style="cursor:pointer;color:var(--muted);font-size:13px" title="Delete">✕</span>
+        </span>`;
+    };
+
     let html = '';
 
     if (trained.length) {
       html += `<div style="font-size:10px;font-weight:700;color:var(--teal-glow);letter-spacing:0.8px;text-transform:uppercase;padding:6px 2px 4px">✓ Trained (${trained.length})</div>`;
       html += trained.map(e => `
-        <div class="trained-item" title="${e.answer}">
+        <div class="trained-item">
           <span style="flex:1">
             <strong style="color:#E0EAF8">${e.question}</strong><br>
             <span style="color:var(--muted);font-size:11px">${e.language.toUpperCase()} · ${e.answer.substring(0,55)}${e.answer.length>55?'…':''}</span>
           </span>
-          <span onclick="removeKB(${e.id})" style="cursor:pointer;color:var(--muted);font-size:14px;flex-shrink:0;margin-left:6px" title="Delete">✕</span>
+          ${actions(e)}
         </div>`).join('');
     }
 
     if (cached.length) {
-      html += `<div style="font-size:10px;font-weight:700;color:var(--gold);letter-spacing:0.8px;text-transform:uppercase;padding:10px 2px 4px">✦ AI Cached (${cached.length}) — review &amp; promote</div>`;
+      html += `<div style="font-size:10px;font-weight:700;color:var(--gold);letter-spacing:0.8px;text-transform:uppercase;padding:10px 2px 4px">✦ AI Cached (${cached.length}) — review &amp; edit</div>`;
       html += cached.map(e => `
-        <div class="trained-item" style="border-color:rgba(240,165,0,0.2);background:rgba(240,165,0,0.04);" title="${e.answer}">
+        <div class="trained-item" style="border-color:rgba(240,165,0,0.2);background:rgba(240,165,0,0.04);">
           <span style="flex:1">
             <strong style="color:#F5DFA0">${e.question}</strong><br>
             <span style="color:var(--muted);font-size:11px">${e.language.toUpperCase()} · ${e.answer.substring(0,55)}${e.answer.length>55?'…':''}</span>
           </span>
-          <span style="display:flex;gap:6px;flex-shrink:0;margin-left:6px;align-items:center">
-            <span onclick="promoteKB(${e.id})" style="cursor:pointer;font-size:10px;font-weight:600;color:var(--teal-glow);border:1px solid rgba(0,212,187,0.3);border-radius:6px;padding:2px 7px" title="Approve & make permanent">✓ Keep</span>
-            <span onclick="removeKB(${e.id})" style="cursor:pointer;color:var(--muted);font-size:13px" title="Delete">✕</span>
-          </span>
+          ${actions(e)}
         </div>`).join('');
     }
 
@@ -1650,11 +1844,17 @@ document.addEventListener('keydown', e => {
   if (e.key === 'Escape') {
     stopListening(true);
     stopTrainListen(document.querySelector('.train-form .btn-voice'), true);
+    closeEditModal();
   }
   if ((e.ctrlKey || e.metaKey) && e.key === 'm') {
     e.preventDefault();
     toggleListen();
   }
+});
+
+// Close edit modal when clicking the dark overlay behind it
+document.getElementById('editModalOverlay').addEventListener('click', function(e) {
+  if (e.target === this) closeEditModal();
 });
 </script>
 </body>
