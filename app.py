@@ -406,142 +406,178 @@ AI_FALLBACK_HF_TOKEN = HF_TOKEN   # ← Uses your source.txt token automatically
 #   "Qwen/Qwen2.5-1.5B-Instruct"         ← smaller, faster, multilingual
 #   "HuggingFaceTB/SmolLM2-1.7B-Instruct"← lightest, HF-native
 #   "meta-llama/Llama-3.2-3B-Instruct"   ← best multilingual (needs license accept)
-AI_FALLBACK_MODEL = "microsoft/Phi-3.5-mini-instruct"
+# ──────────────────────────────────────────────────────────────────────────────
+# Model choice
+# Confirmed FREE on HF serverless inference (no PRO needed, not gated):
+#   "mistralai/Mistral-7B-Instruct-v0.3"   ← DEFAULT — reliable, free, OpenAI-compat
+#   "HuggingFaceH4/zephyr-7b-beta"         ← alternative free option
+#   "meta-llama/Llama-3.1-8B-Instruct"     ← good quality, free tier
+# ──────────────────────────────────────────────────────────────────────────────
+AI_FALLBACK_MODEL = "mistralai/Mistral-7B-Instruct-v0.3"
 
-# HF Serverless Inference API endpoint
-HF_INFERENCE_URL = f"https://api-inference.huggingface.co/models/{AI_FALLBACK_MODEL}/v1/chat/completions"
+# ── Endpoint 1: HF Router (OpenAI-compatible chat format) ─────────────────────
+# This is the primary endpoint. Uses messages[] with system/user roles.
+HF_URL_ROUTER = (
+    f"https://router.huggingface.co/hf-inference/models/"
+    f"{AI_FALLBACK_MODEL}/v1/chat/completions"
+)
+
+# ── Endpoint 2: Classic HF Inference API (text-generation pipeline format) ────
+# Fallback. Uses a single 'inputs' string with Mistral [INST] tokens.
+# URL has NO /v1/chat/completions — just /models/{model}
+HF_URL_CLASSIC = f"https://api-inference.huggingface.co/models/{AI_FALLBACK_MODEL}"
+
+import requests as _requests  # aliased to avoid shadowing Flask's `request`
 
 # ──────────────────────────────────────────────────────────────────────────────
-# CUSTOM SYSTEM PROMPT  ← Edit this to describe your venue/business context
-# The AI will use this as its personality and knowledge frame.
+# CUSTOM SYSTEM PROMPT  ← Edit this to describe your venue / business.
+# The AI uses this as its knowledge frame for every unanswered visitor query.
 # ──────────────────────────────────────────────────────────────────────────────
 def build_system_prompt(biz_context: dict) -> str:
-    return f"""You are Swagat, a friendly and helpful AI reception assistant for {biz_context['name']}, \
-which is a {biz_context['type']} located in Odisha, India.
+    return (
+        f"You are Swagata, a friendly AI reception assistant for "
+        f"{biz_context['name']}, a {biz_context['type']} in Odisha, India. "
+        f"Answer visitor questions about the venue, timings, tickets, and facilities. "
+        f"Be warm, concise (2-3 sentences max). "
+        f"Do NOT invent phone numbers, prices or dates. "
+        f"If you don't know, say so and suggest asking the front desk. "
+        f"If the visitor writes in Odia or Hindi, reply in that language."
+    )
 
-Your role:
-- Answer visitor questions about the venue, services, timings, tickets, facilities, and general information
-- Be warm, polite and concise — visitors may be tourists, locals, or officials
-- If a question is genuinely outside your knowledge, say so honestly and suggest they ask the front desk
-- Keep answers short (2-4 sentences max) — this is a reception kiosk, not a chat bot
-- Do NOT make up specific details like phone numbers, prices, or dates unless you know them for certain
-- If the visitor writes in Odia or Hindi, try to respond in the same language if possible
 
-Business context:
-  Name: {biz_context['name']}
-  Type: {biz_context['type']}
-  Location: Odisha, India
+def _router_call(user_query: str, system_prompt: str, headers: dict) -> str:
+    """
+    Primary: router.huggingface.co — OpenAI-compatible messages[] format.
+    Returns answer string. Raises on failure.
+    """
+    payload = {
+        "model": AI_FALLBACK_MODEL,
+        "messages": [
+            {"role": "system", "content": system_prompt},
+            {"role": "user",   "content": user_query},
+        ],
+        "max_tokens": 180,
+        "temperature": 0.4,
+        "top_p": 0.85,
+        "stream": False,
+    }
+    resp = _requests.post(HF_URL_ROUTER, json=payload, headers=headers, timeout=35)
+    print(f"[AI Fallback] router → HTTP {resp.status_code}")
+    if resp.status_code != 200:
+        print(f"[AI Fallback] router body: {resp.text[:300]}")
+    resp.raise_for_status()
+    data = resp.json()
+    return data["choices"][0]["message"]["content"].strip()
 
-You are the first point of contact for visitors. Be helpful, accurate, and brief."""
+
+def _classic_call(user_query: str, system_prompt: str, headers: dict) -> str:
+    """
+    Fallback: api-inference.huggingface.co — text-generation pipeline format.
+    Mistral needs [INST] tokens in the 'inputs' string.
+    Returns answer string. Raises on failure.
+    """
+    # Mistral instruct prompt format
+    prompt = (
+        f"<s>[INST] <<SYS>>\n{system_prompt}\n<</SYS>>\n\n"
+        f"{user_query} [/INST]"
+    )
+    payload = {
+        "inputs": prompt,
+        "parameters": {
+            "max_new_tokens": 180,
+            "temperature": 0.4,
+            "top_p": 0.85,
+            "return_full_text": False,   # only return the generated part
+            "do_sample": True,
+        },
+    }
+    # Classic endpoint does not use X-Wait-For-Model header — remove it
+    classic_headers = {k: v for k, v in headers.items() if k != "X-Wait-For-Model"}
+    resp = _requests.post(HF_URL_CLASSIC, json=payload, headers=classic_headers, timeout=40)
+    print(f"[AI Fallback] classic → HTTP {resp.status_code}")
+    if resp.status_code != 200:
+        print(f"[AI Fallback] classic body: {resp.text[:300]}")
+    resp.raise_for_status()
+    data = resp.json()
+    # Classic returns a list: [{"generated_text": "..."}]
+    if isinstance(data, list):
+        return data[0]["generated_text"].strip()
+    # Some models return dict with generated_text directly
+    return data.get("generated_text", str(data)).strip()
+
 
 def generate_ai_fallback_response(user_query: str, biz_context: dict) -> dict:
     """
-    Call Phi-3.5-mini-instruct via HF Serverless Inference API.
-    Returns a dict: { 'answer': str, 'model': str, 'ai_source': str }
+    Call Mistral-7B-Instruct via HF Inference API.
 
-    Falls back gracefully if:
-    - No HF token configured
-    - Model is loading (503) — returns a retry-later message
-    - Network error / timeout
-    - Rate limit hit (429)
+    Strategy:
+      1. Try router.huggingface.co  (OpenAI chat format — preferred)
+      2. Fall back to api-inference.huggingface.co (classic pipeline format)
+      3. On any failure: log full status + body, return graceful message
+
+    Returns dict: { answer, model, ai_source }
     """
     if not AI_FALLBACK_HF_TOKEN:
+        print("[AI Fallback] No HF token configured.")
         return {
             "answer": "I don't have that information in my knowledge base yet. "
                       "Please ask our staff at the front desk for assistance.",
             "model": "none",
-            "ai_source": "no_token"
+            "ai_source": "no_token",
         }
-
-    system_prompt = build_system_prompt(biz_context)
-
-    payload = {
-        "model": AI_FALLBACK_MODEL,
-        "messages": [
-            {"role": "system",  "content": system_prompt},
-            {"role": "user",    "content": user_query}
-        ],
-        "max_tokens": 180,      # Keep answers concise for reception kiosk
-        "temperature": 0.4,     # Low temp = factual, consistent answers
-        "top_p": 0.85,
-        "stream": False
-    }
 
     headers = {
         "Authorization": f"Bearer {AI_FALLBACK_HF_TOKEN}",
         "Content-Type": "application/json",
-        "X-Wait-For-Model": "true"   # Wait up to 20s if model is cold-starting
+        "X-Wait-For-Model": "true",
+        "X-Use-Cache": "false",
     }
+    system_prompt = build_system_prompt(biz_context)
 
+    # ── Try router first ──────────────────────────────────────────────────────
     try:
-        import urllib.request
-        import urllib.error
- 
-        req_data = json.dumps(payload).encode("utf-8")
-        req = urllib.request.Request(
-            HF_INFERENCE_URL,
-            data=req_data,
-            headers=headers,
-            method="POST"
-        )
-
-        with urllib.request.urlopen(req, timeout=30) as resp:
-            result = json.loads(resp.read().decode("utf-8"))
-
-        # Extract answer from OpenAI-compatible chat completion response
-        answer = result["choices"][0]["message"]["content"].strip()
-
-        # Trim any leading/trailing role echoes the model might add
-        for prefix in ["Swagata:", "Assistant:", "AI:"]:
-            if answer.startswith(prefix):
-                answer = answer[len(prefix):].strip()
-
-        print(f"[AI Fallback] ✓ Phi-3.5 responded ({len(answer)} chars)")
-        return {
-            "answer": answer,
-            "model": AI_FALLBACK_MODEL,
-            "ai_source": "phi35_hf_inference"
-        }
-
-    except urllib.error.HTTPError as e:
-        status = e.code
-        body = e.read().decode("utf-8", errors="replace")
-        print(f"[AI Fallback] HTTP {status}: {body[:200]}")
-
-        if status == 503:
-            return {
-                "answer": "My AI brain is warming up — please try again in 20 seconds, "
-                          "or ask our staff directly.",
-                "model": AI_FALLBACK_MODEL,
-                "ai_source": "model_loading"
-            }
-        if status == 429:
-            return {
-                "answer": "I'm receiving too many questions right now. "
-                          "Please try again in a moment or speak to our staff.",
-                "model": AI_FALLBACK_MODEL,
-                "ai_source": "rate_limited"
-            }
-        if status == 401:
-            return {
-                "answer": "AI configuration issue. Please contact the administrator.",
-                "model": AI_FALLBACK_MODEL,
-                "ai_source": "auth_error"
-            }
-        return {
-            "answer": "I couldn't get an AI response right now. Please ask our front desk staff.",
-            "model": AI_FALLBACK_MODEL,
-            "ai_source": f"http_error_{status}"
-        }
-
+        answer = _router_call(user_query, system_prompt, headers)
+        answer = _clean_answer(answer)
+        print(f"[AI Fallback] ✓ router success ({len(answer)} chars)")
+        return {"answer": answer, "model": AI_FALLBACK_MODEL, "ai_source": "mistral_router"}
+    except _requests.HTTPError as e:
+        print(f"[AI Fallback] Router HTTP {e.response.status_code} — trying classic...")
     except Exception as e:
-        print(f"[AI Fallback] Error: {e}")
-        return {
-            "answer": "I'm having trouble connecting to my AI brain. "
-                      "Please ask our staff at the front desk — they'll be happy to help!",
-            "model": AI_FALLBACK_MODEL,
-            "ai_source": "network_error"
-        }
+        print(f"[AI Fallback] Router error: {type(e).__name__}: {e} — trying classic...")
+
+    # ── Fall back to classic ──────────────────────────────────────────────────
+    try:
+        answer = _classic_call(user_query, system_prompt, headers)
+        answer = _clean_answer(answer)
+        print(f"[AI Fallback] ✓ classic success ({len(answer)} chars)")
+        return {"answer": answer, "model": AI_FALLBACK_MODEL, "ai_source": "mistral_classic"}
+    except _requests.HTTPError as e:
+        status = e.response.status_code
+        body   = e.response.text[:400]
+        print(f"[AI Fallback] Classic HTTP {status}: {body}")
+        if status == 503:
+            return {"answer": "My AI brain is warming up — please try again in 20 seconds, or ask our staff.",
+                    "model": AI_FALLBACK_MODEL, "ai_source": "model_loading"}
+        if status == 429:
+            return {"answer": "Too many questions right now — please try again shortly or ask our staff.",
+                    "model": AI_FALLBACK_MODEL, "ai_source": "rate_limited"}
+        if status in (401, 403):
+            return {"answer": "AI token issue. Please contact the administrator.",
+                    "model": AI_FALLBACK_MODEL, "ai_source": f"auth_{status}"}
+        return {"answer": "I couldn't reach my AI brain right now. Please ask our front desk staff.",
+                "model": AI_FALLBACK_MODEL, "ai_source": f"http_{status}"}
+    except Exception as e:
+        print(f"[AI Fallback] Both endpoints failed: {type(e).__name__}: {e}")
+        return {"answer": "I'm having trouble connecting to AI right now. Please ask our staff!",
+                "model": AI_FALLBACK_MODEL, "ai_source": "network_error"}
+
+
+def _clean_answer(text: str) -> str:
+    """Strip role-echo prefixes the model sometimes adds."""
+    for prefix in ("Swagata:", "Assistant:", "AI:", "Response:", "[/INST]"):
+        if text.startswith(prefix):
+            text = text[len(prefix):].strip()
+    return text
 
 # ==========================================
 # 6. ODIA AI ENDPOINTS (Hardware Mic Control)
@@ -695,7 +731,8 @@ def ai_status():
     return jsonify({
         "model": AI_FALLBACK_MODEL,
         "token_configured": bool(AI_FALLBACK_HF_TOKEN),
-        "inference_url": HF_INFERENCE_URL
+        "url_router":  HF_URL_ROUTER,
+        "url_classic": HF_URL_CLASSIC,
     })
 
 @app.route('/api/kb', methods=['GET'])
