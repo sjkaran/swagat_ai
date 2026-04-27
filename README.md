@@ -6,18 +6,24 @@
 ## Tech stack
 
 *Voice Engine*
-> STT - Whisper, TTS - win32com & pythoncom
+> STT - Whisper, TTS - win32com & pythoncom, 
 > recording - Edge-web-recorder (depends on internet connection)
 
 *Backend*
-> Python, flask,
+> Python, flask, 
 > AI - Ollama
 
 *DB*
-> Sqlite
+> Sqlite, 
 > Json
 
 *Front End:*
-> Html
-> CSS
+> Html, 
+> CSS, 
 > Java Script
+
+
+
+### Vision:
+
+*"To make this model efficient enough to be in the use of common public of Odisha and India."*
