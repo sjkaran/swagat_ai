@@ -742,6 +742,27 @@ def delete_kb_entry(item_id):
     conn.close()
     return jsonify({"status": "success", "message": "Deleted successfully"})
 
+@app.route('/api/kb/<int:item_id>', methods=['PUT'])
+def update_kb_entry(item_id):
+    """Edit an existing KB entry's question, answer, and/or language."""
+    data = request.json
+    question = data.get('question', '').strip()
+    answer   = data.get('answer', '').strip()
+    language = data.get('language', 'en')
+
+    if not question or not answer:
+        return jsonify({"error": "question and answer are required"}), 400
+
+    conn = get_db_connection()
+    conn.execute(
+        'UPDATE knowledge_base SET question = ?, answer = ?, language = ? WHERE id = ?',
+        (question, answer, language, item_id)
+    )
+    conn.commit()
+    conn.close()
+    print(f"[KB] Entry {item_id} updated.")
+    return jsonify({"status": "success", "id": item_id})
+
 @app.route('/api/kb/<int:item_id>/promote', methods=['POST'])
 def promote_kb_entry(item_id):
     """Convert an AI-cached entry into a permanent trained entry (ai_cached=0)."""
