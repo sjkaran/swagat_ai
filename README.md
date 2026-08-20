@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 # SwagatAI — स्वागत AI · ସ୍ୱାଗତ AI
 
 **Self-trainable, voice-driven AI reception assistant for Odisha**
@@ -22,6 +21,15 @@ python run.py
 ```
 
 Open your browser to `http://localhost:5000` — Swagata is live.
+
+---
+# SwagatAI
+
+![SwagatAI Logo](assets/swagat-ai-ui.png)
+
+Odisha’s first trainable vernacular voice reception assistant…
+
+
 
 ---
 
@@ -254,4 +262,4 @@ The **Suggestions** tab automatically shows questions visitors asked that Swagat
 ### Vision:
 
 *"To make this model efficient enough to be in the use of common public of Odisha and India."*
->>>>>>> 7fb4ba510767b55c2b2e54b33566cc8c073b54e2
+
