@@ -1,4 +1,9 @@
+<<<<<<< HEAD
 backend/__pycache__/*
 install.sh
 next_updates.txt
 
+=======
+source.txt
+*.db
+>>>>>>> 7fb4ba510767b55c2b2e54b33566cc8c073b54e2

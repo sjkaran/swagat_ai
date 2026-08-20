@@ -59,10 +59,7 @@
       radial-gradient(circle 500px at 85% 40%, rgba(255,107,0,0.05) 0%, transparent 70%);
     animation: bgPulse 8s ease-in-out infinite alternate;
   }
-  @keyframes bgPulse {
-    from { opacity: 0.6; }
-    to { opacity: 1; }
-  }
+  @keyframes bgPulse { from { opacity: 0.6; } to { opacity: 1; } }
 
   .bg-grid {
     position: fixed; inset: 0; z-index: 0; opacity: 0.03;
@@ -117,6 +114,16 @@
     background: var(--saffron); color: white;
     box-shadow: 0 0 10px rgba(255,107,0,0.4);
   }
+  /* Auto-detected lang pulse */
+  .lang-btn.auto-detected {
+    animation: autoDetectPulse 0.6s ease;
+  }
+  @keyframes autoDetectPulse {
+    0% { transform: scale(1); }
+    40% { transform: scale(1.12); box-shadow: 0 0 18px rgba(255,107,0,0.7); }
+    100% { transform: scale(1); }
+  }
+
   .mode-toggle {
     display: flex; align-items: center; gap: 8px;
     padding: 7px 16px;
@@ -144,6 +151,15 @@
     align-items: start;
   }
 
+<<<<<<< HEAD
+=======
+  .app-shell.visitor-mode .main-content {
+    grid-template-columns: 340px minmax(300px, 800px);
+    justify-content: center;
+  }
+  .app-shell.visitor-mode .training-panel { display: none; }
+
+>>>>>>> 7fb4ba510767b55c2b2e54b33566cc8c073b54e2
   .avatar-panel {
     display: flex; flex-direction: column; align-items: center; gap: 20px;
   }
@@ -162,10 +178,7 @@
                 linear-gradient(135deg, var(--teal-glow), var(--saffron), var(--teal-glow)) border-box;
     animation: ringRotate 6s linear infinite;
   }
-  @keyframes ringRotate {
-    from { transform: rotate(0deg); }
-    to { transform: rotate(360deg); }
-  }
+  @keyframes ringRotate { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
   .orb-ring::before {
     content: '';
     position: absolute; inset: -4px;
@@ -184,9 +197,7 @@
     background: radial-gradient(circle at 35% 35%, #F7D4B5, #D4895A);
   }
 
-  svg#face {
-    width: 100%; height: 100%;
-  }
+  svg#face { width: 100%; height: 100%; }
 
   @keyframes blink {
     0%, 90%, 100% { transform: scaleY(1); }
@@ -208,30 +219,22 @@
     50% { d: path("M 125 186 Q 162 194 199 186"); }
   }
 
-  #mouth-path {
-    animation: idleMouth 3s ease-in-out infinite;
-  }
-  .speaking #mouth-path {
-    animation: speakMouth 0.35s ease-in-out infinite;
-  }
+  #mouth-path { animation: idleMouth 3s ease-in-out infinite; }
+  .speaking #mouth-path { animation: speakMouth 0.35s ease-in-out infinite; }
 
   @keyframes headBob {
     0%,100% { transform: translateY(0px) rotate(0deg); }
     33% { transform: translateY(-3px) rotate(0.5deg); }
     66% { transform: translateY(2px) rotate(-0.3deg); }
   }
-  #head-group {
-    animation: headBob 5s ease-in-out infinite;
-  }
+  #head-group { animation: headBob 5s ease-in-out infinite; }
 
   @keyframes browRaise {
     0%,100% { transform: translateY(0); }
     50% { transform: translateY(-3px); }
   }
   .speaking #brow-left,
-  .speaking #brow-right {
-    animation: browRaise 0.6s ease-in-out infinite;
-  }
+  .speaking #brow-right { animation: browRaise 0.6s ease-in-out infinite; }
 
   .orb-status {
     position: absolute; bottom: 10px; left: 50%;
@@ -245,14 +248,8 @@
     backdrop-filter: blur(10px);
     display: flex; align-items: center; gap: 6px;
   }
-  .status-indicator {
-    width: 6px; height: 6px; border-radius: 50%;
-    background: var(--success);
-  }
-  .speaking-wave {
-    display: none;
-    align-items: center; gap: 2px;
-  }
+  .status-indicator { width: 6px; height: 6px; border-radius: 50%; background: var(--success); }
+  .speaking-wave { display: none; align-items: center; gap: 2px; }
   .speaking-wave span {
     display: block; width: 2px; background: var(--teal-glow);
     border-radius: 2px;
@@ -278,41 +275,36 @@
     -webkit-background-clip: text; -webkit-text-fill-color: transparent;
     background-clip: text;
   }
-  .avatar-tagline {
-    text-align: center; font-size: 13px; color: var(--muted);
-    letter-spacing: 0.3px;
-  }
+  .avatar-tagline { text-align: center; font-size: 13px; color: var(--muted); letter-spacing: 0.3px; }
 
+<<<<<<< HEAD
   .stats-row {
     display: flex; gap: 12px; width: 100%;
   }
+=======
+  .stats-row { display: flex; gap: 12px; width: 100%; }
+>>>>>>> 7fb4ba510767b55c2b2e54b33566cc8c073b54e2
   .stat-card {
     flex: 1;
     background: var(--night2);
     border: 1px solid rgba(255,255,255,0.07);
-    border-radius: 12px;
-    padding: 12px;
-    text-align: center;
+    border-radius: 12px; padding: 12px; text-align: center;
   }
-  .stat-card .val {
-    font-size: 20px; font-weight: 700;
-    font-family: 'Baloo 2', sans-serif;
-    color: var(--teal-glow);
-  }
-  .stat-card .lbl {
-    font-size: 10px; color: var(--muted); margin-top: 2px;
-    text-transform: uppercase; letter-spacing: 0.5px;
-  }
+  .stat-card .val { font-size: 20px; font-weight: 700; font-family: 'Baloo 2', sans-serif; color: var(--teal-glow); }
+  .stat-card .lbl { font-size: 10px; color: var(--muted); margin-top: 2px; text-transform: uppercase; letter-spacing: 0.5px; }
 
+<<<<<<< HEAD
   .convo-panel {
     display: flex; flex-direction: column; gap: 16px;
   }
+=======
+  .convo-panel { display: flex; flex-direction: column; gap: 16px; }
+>>>>>>> 7fb4ba510767b55c2b2e54b33566cc8c073b54e2
 
   .panel-card {
     background: var(--night2);
     border: 1px solid rgba(255,255,255,0.07);
-    border-radius: 18px;
-    overflow: hidden;
+    border-radius: 18px; overflow: hidden;
   }
 
   .panel-header {
@@ -328,11 +320,8 @@
   .panel-icon { font-size: 14px; }
 
   .convo-feed {
-    padding: 20px;
-    display: flex; flex-direction: column; gap: 14px;
-    min-height: 320px; max-height: 380px;
-    overflow-y: auto;
-    scroll-behavior: smooth;
+    padding: 20px; display: flex; flex-direction: column; gap: 14px;
+    min-height: 320px; max-height: 380px; overflow-y: auto; scroll-behavior: smooth;
   }
   .convo-feed::-webkit-scrollbar { width: 4px; }
   .convo-feed::-webkit-scrollbar-track { background: transparent; }
@@ -353,48 +342,54 @@
     display: flex; align-items: center; justify-content: center;
     font-size: 14px; font-weight: 600;
   }
-  .msg-avatar.ai-av {
-    background: linear-gradient(135deg, var(--teal), var(--teal-glow));
-    font-size: 12px; color: white;
-  }
-  .msg-avatar.visitor-av {
-    background: rgba(255,107,0,0.15);
-    border: 1px solid rgba(255,107,0,0.3);
-    color: var(--saffron);
-  }
+  .msg-avatar.ai-av { background: linear-gradient(135deg, var(--teal), var(--teal-glow)); font-size: 12px; color: white; }
+  .msg-avatar.visitor-av { background: rgba(255,107,0,0.15); border: 1px solid rgba(255,107,0,0.3); color: var(--saffron); }
 
-  .msg-bubble {
-    max-width: 78%; padding: 11px 15px;
-    border-radius: 16px; font-size: 14px; line-height: 1.55;
-  }
+  .msg-bubble { max-width: 78%; padding: 11px 15px; border-radius: 16px; font-size: 14px; line-height: 1.55; }
   .msg.ai .msg-bubble {
-    background: rgba(0,168,150,0.1);
-    border: 1px solid rgba(0,212,187,0.15);
-    border-bottom-left-radius: 4px;
-    color: #E8F5F3;
+    background: rgba(0,168,150,0.1); border: 1px solid rgba(0,212,187,0.15);
+    border-bottom-left-radius: 4px; color: #E8F5F3;
   }
   .msg.visitor .msg-bubble {
-    background: rgba(255,107,0,0.1);
-    border: 1px solid rgba(255,107,0,0.2);
-    border-bottom-right-radius: 4px;
-    color: #FFF0E6;
-    text-align: right;
+    background: rgba(255,107,0,0.1); border: 1px solid rgba(255,107,0,0.2);
+    border-bottom-right-radius: 4px; color: #FFF0E6; text-align: right;
   }
-  .msg-meta {
-    font-size: 10px; color: var(--muted); margin-top: 4px;
-  }
+  .msg-meta { font-size: 10px; color: var(--muted); margin-top: 4px; }
   .visitor .msg-meta { text-align: right; }
 
+<<<<<<< HEAD
+=======
+  /* Matched question reference */
+  .matched-ref {
+    margin-top: 7px;
+    padding: 5px 9px;
+    background: rgba(0,212,187,0.07);
+    border-left: 2px solid rgba(0,212,187,0.4);
+    border-radius: 0 6px 6px 0;
+    font-size: 10px; color: rgba(0,212,187,0.75);
+    font-style: normal;
+  }
+  .matched-ref em { font-style: italic; color: rgba(0,212,187,0.9); }
+
+  /* Confidence badge on message */
+  .confidence-badge {
+    display: inline-flex; align-items: center; gap: 4px;
+    font-size: 9px; font-weight: 600;
+    padding: 2px 7px; border-radius: 10px; margin-left: 6px;
+    vertical-align: middle;
+  }
+  .confidence-high { background: rgba(46,204,113,0.15); color: #5EFFA0; border: 1px solid rgba(46,204,113,0.25); }
+  .confidence-mid  { background: rgba(240,165,0,0.15);  color: var(--gold);  border: 1px solid rgba(240,165,0,0.25); }
+  .confidence-low  { background: rgba(232,64,64,0.12);  color: #FF8080;       border: 1px solid rgba(232,64,64,0.2); }
+
+>>>>>>> 7fb4ba510767b55c2b2e54b33566cc8c073b54e2
   .typing-indicator {
     display: none; align-items: center; gap: 5px; padding: 10px 14px;
-    background: rgba(0,168,150,0.08);
-    border: 1px solid rgba(0,212,187,0.1);
-    border-radius: 16px; border-bottom-left-radius: 4px;
-    width: fit-content;
+    background: rgba(0,168,150,0.08); border: 1px solid rgba(0,212,187,0.1);
+    border-radius: 16px; border-bottom-left-radius: 4px; width: fit-content;
   }
   .typing-indicator span {
-    width: 6px; height: 6px; border-radius: 50%;
-    background: var(--teal-glow);
+    width: 6px; height: 6px; border-radius: 50%; background: var(--teal-glow);
     animation: typingDot 1.2s ease-in-out infinite;
   }
   .typing-indicator span:nth-child(2) { animation-delay: 0.2s; }
@@ -405,22 +400,16 @@
   }
 
   .input-zone {
-    padding: 16px 20px;
-    border-top: 1px solid rgba(255,255,255,0.06);
+    padding: 16px 20px; border-top: 1px solid rgba(255,255,255,0.06);
     display: flex; flex-direction: column; gap: 12px;
   }
 
-  .input-row {
-    display: flex; gap: 10px; align-items: center;
-  }
+  .input-row { display: flex; gap: 10px; align-items: center; }
 
   .text-input {
-    flex: 1; background: rgba(255,255,255,0.05);
-    border: 1px solid rgba(255,255,255,0.1);
-    border-radius: 12px; padding: 11px 16px;
-    color: white; font-size: 14px; font-family: 'DM Sans', sans-serif;
-    outline: none; transition: border-color 0.2s;
-    resize: none;
+    flex: 1; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 12px; padding: 11px 16px; color: white; font-size: 14px;
+    font-family: 'DM Sans', sans-serif; outline: none; transition: border-color 0.2s; resize: none;
   }
   .text-input::placeholder { color: var(--muted); }
   .text-input:focus { border-color: var(--teal-light); }
@@ -434,25 +423,20 @@
   }
   .btn-primary {
     background: linear-gradient(135deg, var(--teal), var(--teal-light));
-    color: white;
-    box-shadow: 0 4px 15px rgba(0,168,150,0.3);
+    color: white; box-shadow: 0 4px 15px rgba(0,168,150,0.3);
   }
   .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(0,168,150,0.4); }
   .btn-primary:active { transform: translateY(0); }
 
   .btn-voice {
     width: 44px; height: 44px; border-radius: 12px;
-    background: rgba(255,107,0,0.1);
-    border: 1px solid rgba(255,107,0,0.25);
-    color: var(--saffron);
-    display: flex; align-items: center; justify-content: center;
-    cursor: pointer; transition: all 0.2s;
-    flex-shrink: 0;
+    background: rgba(255,107,0,0.1); border: 1px solid rgba(255,107,0,0.25);
+    color: var(--saffron); display: flex; align-items: center; justify-content: center;
+    cursor: pointer; transition: all 0.2s; flex-shrink: 0;
   }
   .btn-voice:hover { background: rgba(255,107,0,0.2); border-color: var(--saffron); }
   .btn-voice.listening {
-    background: rgba(255,107,0,0.25);
-    border-color: var(--saffron);
+    background: rgba(255,107,0,0.25); border-color: var(--saffron);
     animation: listenPulse 1s ease-in-out infinite;
   }
   @keyframes listenPulse {
@@ -460,143 +444,230 @@
     50% { box-shadow: 0 0 0 8px rgba(255,107,0,0); }
   }
 
-  .input-hints {
-    display: flex; gap: 8px; flex-wrap: wrap;
-  }
+  .input-hints { display: flex; gap: 8px; flex-wrap: wrap; }
   .hint-chip {
-    padding: 5px 11px;
-    background: rgba(255,255,255,0.04);
-    border: 1px solid rgba(255,255,255,0.08);
-    border-radius: 20px; font-size: 11px; color: var(--muted);
-    cursor: pointer; transition: all 0.2s;
+    padding: 5px 11px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 20px; font-size: 11px; color: var(--muted); cursor: pointer; transition: all 0.2s;
   }
   .hint-chip:hover { border-color: var(--teal-light); color: var(--teal-light); background: rgba(0,212,187,0.06); }
 
   .ai-fallback-badge {
     display: inline-flex; align-items: center; gap: 5px;
-    background: rgba(240,165,0,0.1);
-    border: 1px solid rgba(240,165,0,0.25);
-    border-radius: 20px; padding: 3px 10px;
-    font-size: 10px; color: var(--gold); font-weight: 500;
+    background: rgba(240,165,0,0.1); border: 1px solid rgba(240,165,0,0.25);
+    border-radius: 20px; padding: 3px 10px; font-size: 10px; color: var(--gold); font-weight: 500;
+    cursor: default;
   }
 
+<<<<<<< HEAD
   .training-panel {
     display: flex; flex-direction: column; gap: 14px;
+=======
+  /* AI model pill shown inside AI messages */
+  .ai-model-pill {
+    display: inline-flex; align-items: center; gap: 4px;
+    font-size: 9px; font-weight: 600; padding: 2px 8px;
+    border-radius: 10px; margin-top: 5px;
+    background: rgba(240,165,0,0.1); border: 1px solid rgba(240,165,0,0.2);
+    color: var(--gold); letter-spacing: 0.3px;
+>>>>>>> 7fb4ba510767b55c2b2e54b33566cc8c073b54e2
   }
 
-  .train-form {
-    display: flex; flex-direction: column; gap: 10px;
-    padding: 16px;
+  /* Typing indicator label */
+  .typing-label {
+    font-size: 10px; color: var(--muted); margin-left: 4px;
   }
+
+  /* Auto-detect lang toast (inline in input zone) */
+  .lang-auto-banner {
+    display: none;
+    align-items: center; gap: 8px;
+    padding: 6px 12px;
+    background: rgba(0,212,187,0.08);
+    border: 1px solid rgba(0,212,187,0.2);
+    border-radius: 8px;
+    font-size: 11px; color: var(--teal-glow);
+    animation: fadeSlide 0.4s ease;
+  }
+  .lang-auto-banner.visible { display: flex; }
+  @keyframes fadeSlide {
+    from { opacity: 0; transform: translateY(-4px); }
+    to { opacity: 1; transform: none; }
+  }
+
+  .training-panel { display: flex; flex-direction: column; gap: 14px; }
+
+  .train-form { display: flex; flex-direction: column; gap: 10px; padding: 16px; }
 
   .field-label {
     font-size: 11px; font-weight: 600; color: var(--muted);
-    text-transform: uppercase; letter-spacing: 0.6px;
-    margin-bottom: 4px;
+    text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 4px;
   }
-
   .field-group { display: flex; flex-direction: column; }
 
   .train-input {
-    background: rgba(255,255,255,0.04);
-    border: 1px solid rgba(255,255,255,0.09);
-    border-radius: 10px; padding: 10px 12px;
-    color: white; font-size: 13px; font-family: 'DM Sans', sans-serif;
-    outline: none; transition: border-color 0.2s; resize: none;
+    background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.09);
+    border-radius: 10px; padding: 10px 12px; color: white; font-size: 13px;
+    font-family: 'DM Sans', sans-serif; outline: none; transition: border-color 0.2s; resize: none;
   }
   .train-input::placeholder { color: rgba(136,149,174,0.5); }
   .train-input:focus { border-color: var(--saffron); }
 
   .btn-saffron {
     background: linear-gradient(135deg, var(--saffron), var(--gold));
-    color: white;
-    box-shadow: 0 4px 15px rgba(255,107,0,0.25);
+    color: white; box-shadow: 0 4px 15px rgba(255,107,0,0.25);
   }
   .btn-saffron:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(255,107,0,0.35); }
   .btn-saffron:active { transform: translateY(0); }
 
   .suggestions-list {
     display: flex; flex-direction: column; gap: 8px;
-    padding: 12px 16px;
-    max-height: 280px; overflow-y: auto;
+    padding: 12px 16px; max-height: 280px; overflow-y: auto;
   }
   .suggestions-list::-webkit-scrollbar { width: 3px; }
   .suggestions-list::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.08); border-radius: 2px; }
 
   .suggestion-item {
     display: flex; align-items: flex-start; justify-content: space-between;
-    background: rgba(255,255,255,0.03);
-    border: 1px solid rgba(255,255,255,0.07);
-    border-radius: 10px; padding: 10px 12px;
-    gap: 8px; cursor: pointer; transition: all 0.2s;
+    background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.07);
+    border-radius: 10px; padding: 10px 12px; gap: 8px; cursor: pointer; transition: all 0.2s;
   }
   .suggestion-item:hover { border-color: var(--saffron); background: rgba(255,107,0,0.05); }
   .suggestion-q { font-size: 12px; color: #CDD6E8; line-height: 1.4; flex: 1; }
   .suggestion-badge {
-    font-size: 10px; background: rgba(255,107,0,0.15);
-    color: var(--saffron); padding: 2px 7px; border-radius: 10px;
-    white-space: nowrap; flex-shrink: 0;
-    font-weight: 600;
+    font-size: 10px; background: rgba(255,107,0,0.15); color: var(--saffron);
+    padding: 2px 7px; border-radius: 10px; white-space: nowrap; flex-shrink: 0; font-weight: 600;
   }
 
   .kb-row {
     display: flex; align-items: center; justify-content: space-between;
-    padding: 10px 16px;
-    border-top: 1px solid rgba(255,255,255,0.06);
+    padding: 10px 16px; border-top: 1px solid rgba(255,255,255,0.06);
     font-size: 12px; color: var(--muted);
   }
   .kb-count { color: var(--teal-glow); font-weight: 600; }
 
   .trained-list {
     display: flex; flex-direction: column; gap: 6px;
-    padding: 10px 16px;
-    max-height: 200px; overflow-y: auto;
+    padding: 10px 16px; max-height: 200px; overflow-y: auto;
   }
   .trained-item {
     font-size: 12px; color: #A8B5C8; display: flex; gap: 8px; align-items: flex-start;
     padding: 7px 10px;
     background: rgba(0,212,187,0.04);
-    border-radius: 8px; border: 1px solid rgba(0,212,187,0.08);
-    line-height: 1.4;
+    border-radius: 8px; border: 1px solid rgba(0,212,187,0.08); line-height: 1.4;
   }
   .trained-item::before { content: '✓'; color: var(--teal-glow); flex-shrink: 0; font-size: 11px; margin-top: 1px; }
 
+<<<<<<< HEAD
+=======
+  /* ── KB Edit Modal ── */
+  .edit-modal-overlay {
+    display: none; position: fixed; inset: 0; z-index: 300;
+    background: rgba(8,12,18,0.88);
+    backdrop-filter: blur(12px);
+    align-items: center; justify-content: center;
+  }
+  .edit-modal-overlay.active { display: flex; }
+
+  .edit-modal {
+    background: var(--night2);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 18px;
+    padding: 28px;
+    width: 100%; max-width: 520px;
+    display: flex; flex-direction: column; gap: 16px;
+    box-shadow: 0 24px 80px rgba(0,0,0,0.6);
+    animation: modalIn 0.25s cubic-bezier(0.34,1.56,0.64,1);
+  }
+  @keyframes modalIn {
+    from { opacity: 0; transform: scale(0.93) translateY(12px); }
+    to   { opacity: 1; transform: none; }
+  }
+
+  .edit-modal-title {
+    font-family: 'Baloo 2', sans-serif;
+    font-size: 17px; font-weight: 700; color: var(--white);
+    display: flex; align-items: center; gap: 10px;
+  }
+  .edit-modal-badge {
+    font-size: 10px; font-weight: 600; padding: 2px 9px;
+    border-radius: 10px;
+  }
+  .edit-modal-badge.trained { background: rgba(0,212,187,0.15); color: var(--teal-glow); border: 1px solid rgba(0,212,187,0.25); }
+  .edit-modal-badge.cached  { background: rgba(240,165,0,0.15);  color: var(--gold);      border: 1px solid rgba(240,165,0,0.25); }
+
+  .edit-field { display: flex; flex-direction: column; gap: 6px; }
+  .edit-label {
+    font-size: 10px; font-weight: 700; letter-spacing: 0.7px;
+    text-transform: uppercase; color: var(--muted);
+  }
+  .edit-input {
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 10px; padding: 10px 13px;
+    color: var(--white); font-size: 13px;
+    font-family: 'DM Sans', sans-serif;
+    outline: none; resize: vertical;
+    transition: border-color 0.2s;
+  }
+  .edit-input:focus { border-color: var(--teal-light); }
+
+  .edit-lang-row { display: flex; gap: 8px; align-items: center; }
+  .edit-lang-select {
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 10px; padding: 8px 12px;
+    color: var(--white); font-size: 13px;
+    font-family: 'DM Sans', sans-serif;
+    outline: none; flex: 1;
+  }
+
+  .edit-modal-actions {
+    display: flex; gap: 10px; justify-content: flex-end; margin-top: 4px;
+  }
+  .btn-cancel-edit {
+    padding: 9px 18px; border-radius: 10px; font-size: 13px; font-weight: 600;
+    background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1);
+    color: var(--muted); cursor: pointer; transition: all 0.2s;
+  }
+  .btn-cancel-edit:hover { background: rgba(255,255,255,0.1); color: var(--white); }
+  .btn-save-edit {
+    padding: 9px 22px; border-radius: 10px; font-size: 13px; font-weight: 600;
+    background: linear-gradient(135deg, var(--teal), var(--teal-light));
+    color: white; border: none; cursor: pointer;
+    box-shadow: 0 4px 15px rgba(0,168,150,0.3);
+    transition: all 0.2s;
+  }
+  .btn-save-edit:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(0,168,150,0.4); }
+  .btn-save-edit:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+>>>>>>> 7fb4ba510767b55c2b2e54b33566cc8c073b54e2
   footer {
-    text-align: center;
-    padding: 14px 36px;
+    text-align: center; padding: 14px 36px;
     border-top: 1px solid rgba(255,255,255,0.04);
     font-size: 11px; color: rgba(136,149,174,0.5);
-    display: flex; align-items: center; justify-content: space-between;
-    letter-spacing: 0.2px;
+    display: flex; align-items: center; justify-content: space-between; letter-spacing: 0.2px;
   }
   .footer-brand { display: flex; align-items: center; gap: 6px; }
   .powered-by { display: flex; align-items: center; gap: 6px; }
   .odisha-pride {
     background: linear-gradient(90deg, var(--saffron), var(--gold));
-    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-    font-weight: 600;
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent; font-weight: 600;
   }
 
   .listen-overlay {
-    display: none;
-    position: fixed; inset: 0; z-index: 100;
-    background: rgba(10,14,20,0.9);
-    align-items: center; justify-content: center;
-    flex-direction: column; gap: 20px;
-    backdrop-filter: blur(10px);
+    display: none; position: fixed; inset: 0; z-index: 100;
+    background: rgba(10,14,20,0.9); align-items: center; justify-content: center;
+    flex-direction: column; gap: 20px; backdrop-filter: blur(10px);
   }
   .listen-overlay.active { display: flex; }
   .listen-ripple {
     width: 80px; height: 80px; border-radius: 50%;
-    background: rgba(255,107,0,0.15);
-    border: 2px solid var(--saffron);
+    background: rgba(255,107,0,0.15); border: 2px solid var(--saffron);
     display: flex; align-items: center; justify-content: center;
-    position: relative;
-    font-size: 28px;
+    position: relative; font-size: 28px;
   }
   .listen-ripple::before, .listen-ripple::after {
-    content: ''; position: absolute;
-    border-radius: 50%;
+    content: ''; position: absolute; border-radius: 50%;
     border: 1.5px solid rgba(255,107,0,0.4);
     animation: rippleOut 1.8s ease-out infinite;
   }
@@ -608,24 +679,38 @@
   }
   .listen-text { color: white; font-size: 18px; font-weight: 500; }
   .listen-sub { color: var(--muted); font-size: 13px; }
+
+  /* Live level meter in overlay */
+  .listen-level-bar {
+    width: 180px; height: 4px; background: rgba(255,255,255,0.1);
+    border-radius: 2px; overflow: hidden;
+  }
+  .listen-level-fill {
+    height: 100%; background: linear-gradient(90deg, var(--teal-glow), var(--saffron));
+    border-radius: 2px; width: 0%; transition: width 0.08s;
+  }
+
   .listen-cancel {
     margin-top: 10px; padding: 10px 24px;
-    background: rgba(255,255,255,0.08);
-    border: 1px solid rgba(255,255,255,0.15);
-    border-radius: 30px; color: white; cursor: pointer;
-    font-size: 13px; transition: all 0.2s;
+    background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15);
+    border-radius: 30px; color: white; cursor: pointer; font-size: 13px; transition: all 0.2s;
   }
   .listen-cancel:hover { background: rgba(255,255,255,0.14); }
+  .listen-submit {
+    padding: 10px 24px;
+    background: rgba(46, 204, 113, 0.2); border: 1px solid var(--success);
+    border-radius: 30px; color: white; cursor: pointer;
+    font-size: 14px; font-weight: 600; transition: all 0.2s;
+  }
+  .listen-submit:hover { background: rgba(46, 204, 113, 0.35); }
 
   .toast-container {
     position: fixed; bottom: 80px; right: 24px;
     display: flex; flex-direction: column; gap: 8px; z-index: 200;
   }
   .toast {
-    padding: 10px 18px; border-radius: 12px;
-    font-size: 13px; font-weight: 500;
-    animation: toastIn 0.3s cubic-bezier(0.34,1.56,0.64,1);
-    max-width: 280px;
+    padding: 10px 18px; border-radius: 12px; font-size: 13px; font-weight: 500;
+    animation: toastIn 0.3s cubic-bezier(0.34,1.56,0.64,1); max-width: 280px;
   }
   @keyframes toastIn {
     from { opacity: 0; transform: translateX(20px); }
@@ -633,16 +718,19 @@
   }
   .toast.success { background: rgba(46,204,113,0.15); border: 1px solid rgba(46,204,113,0.3); color: #7FFFC4; }
   .toast.info { background: rgba(0,168,150,0.15); border: 1px solid rgba(0,212,187,0.3); color: var(--teal-glow); }
+<<<<<<< HEAD
   .toast.danger { background: rgba(232,64,64,0.15); border: 1px solid rgba(232,64,64,0.3); color: #FF7070; }
+=======
+  .toast.danger { background: rgba(232,64,64,0.15); border: 1px solid rgba(232,64,64,0.3); color: #FF9090; }
+>>>>>>> 7fb4ba510767b55c2b2e54b33566cc8c073b54e2
 
   .tab-bar {
-    display: flex; padding: 12px 16px 0;
-    gap: 4px; border-bottom: 1px solid rgba(255,255,255,0.06);
+    display: flex; padding: 12px 16px 0; gap: 4px;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
   }
   .tab-btn {
-    padding: 7px 14px; border-radius: 8px 8px 0 0;
-    font-size: 12px; font-weight: 500; cursor: pointer;
-    border: none; background: transparent; color: var(--muted);
+    padding: 7px 14px; border-radius: 8px 8px 0 0; font-size: 12px; font-weight: 500;
+    cursor: pointer; border: none; background: transparent; color: var(--muted);
     transition: all 0.2s; border-bottom: 2px solid transparent;
   }
   .tab-btn.active { color: var(--saffron); border-bottom-color: var(--saffron); }
@@ -659,13 +747,22 @@
 <div class="listen-overlay" id="listenOverlay">
   <div class="listen-ripple">🎤</div>
   <div class="listen-text" id="listenLang">Listening...</div>
-  <div class="listen-sub">Speak in Odia, Hindi, or English</div>
-  <div class="listen-cancel" onclick="stopListening()">Cancel</div>
+  <div class="listen-sub">Auto-detecting: Odia · Hindi · English</div>
+  <div class="listen-level-bar"><div class="listen-level-fill" id="levelFill"></div></div>
+  <div style="display: flex; gap: 12px; margin-top: 15px;">
+    <div class="listen-submit" id="listenSubmitBtn" onclick="stopOdiaAndProcess()" style="display: none;">ସମାପ୍ତ କରନ୍ତୁ (Finish)</div>
+    <div class="listen-cancel" id="listenCancelBtn">Cancel</div>
+  </div>
 </div>
 
 <div class="toast-container" id="toastContainer"></div>
 
+<<<<<<< HEAD
 <div class="app-shell" id="appShell">
+=======
+<div class="app-shell visitor-mode" id="appShell">
+
+>>>>>>> 7fb4ba510767b55c2b2e54b33566cc8c073b54e2
   <header>
     <div class="logo-group">
       <div class="logo-icon">ସ୍ୱ</div>
@@ -676,9 +773,9 @@
     </div>
     <div class="header-controls">
       <div class="lang-pill">
-        <button class="lang-btn active" onclick="setLang('or')">ଓଡ଼ିଆ</button>
+        <button class="lang-btn" onclick="setLang('or')">ଓଡ଼ିଆ</button>
         <button class="lang-btn" onclick="setLang('hi')">हिन्दी</button>
-        <button class="lang-btn" onclick="setLang('en')">English</button>
+        <button class="lang-btn active" onclick="setLang('en')">English</button>
       </div>
       <div class="mode-toggle" onclick="toggleMode()">
         <div class="mode-dot"></div>
@@ -723,7 +820,6 @@
                 <ellipse cx="160" cy="158" rx="130" ry="148"/>
               </clipPath>
             </defs>
-
             <g id="head-group">
               <rect x="130" y="280" width="60" height="60" rx="6" fill="url(#neckGrad)"/>
               <rect x="148" y="282" width="4" height="50" rx="2" fill="#B06030" opacity="0.25"/>
@@ -731,14 +827,19 @@
               <path d="M 130 288 L 160 310 L 190 288 L 160 295 Z" fill="#0D2A45"/>
               <path d="M 80 330 Q 110 310 130 300" stroke="#2A5080" stroke-width="1.5" fill="none" opacity="0.6"/>
               <path d="M 240 330 Q 210 310 190 300" stroke="#2A5080" stroke-width="1.5" fill="none" opacity="0.6"/>
+<<<<<<< HEAD
 
               <ellipse cx="160" cy="158" rx="130" ry="148" fill="url(#skinGrad)"/>
 
+=======
+              <ellipse cx="160" cy="158" rx="130" ry="148" fill="url(#skinGrad)"/>
+>>>>>>> 7fb4ba510767b55c2b2e54b33566cc8c073b54e2
               <g clip-path="url(#faceClip)">
                 <ellipse cx="48" cy="160" rx="55" ry="120" fill="#C4784A" opacity="0.3"/>
                 <ellipse cx="272" cy="160" rx="55" ry="120" fill="#C4784A" opacity="0.3"/>
                 <ellipse cx="160" cy="80" rx="70" ry="55" fill="#FAE0C0" opacity="0.35"/>
               </g>
+<<<<<<< HEAD
 
               <ellipse cx="160" cy="60" rx="128" ry="75" fill="url(#hairGrad)"/>
               <path d="M 40 80 Q 45 20 100 10 Q 130 4 160 4 Q 190 4 220 10 Q 275 20 280 80
@@ -746,10 +847,17 @@
               <path d="M 80 36 Q 120 28 160 30" stroke="#2A1A0C" stroke-width="3" fill="none" opacity="0.5"/>
               <path d="M 100 12 Q 130 8 155 10" stroke="#4A2810" stroke-width="2.5" fill="none" opacity="0.8" stroke-linecap="round"/>
 
+=======
+              <ellipse cx="160" cy="60" rx="128" ry="75" fill="url(#hairGrad)"/>
+              <path d="M 40 80 Q 45 20 100 10 Q 130 4 160 4 Q 190 4 220 10 Q 275 20 280 80 Q 260 50 220 42 Q 190 36 160 36 Q 130 36 100 42 Q 60 50 40 80 Z" fill="#1A0E08"/>
+              <path d="M 80 36 Q 120 28 160 30" stroke="#2A1A0C" stroke-width="3" fill="none" opacity="0.5"/>
+              <path d="M 100 12 Q 130 8 155 10" stroke="#4A2810" stroke-width="2.5" fill="none" opacity="0.8" stroke-linecap="round"/>
+>>>>>>> 7fb4ba510767b55c2b2e54b33566cc8c073b54e2
               <ellipse cx="33" cy="165" rx="14" ry="20" fill="#D4895A"/>
               <ellipse cx="35" cy="165" rx="9" ry="14" fill="#C4784A" opacity="0.6"/>
               <ellipse cx="287" cy="165" rx="14" ry="20" fill="#D4895A"/>
               <ellipse cx="285" cy="165" rx="9" ry="14" fill="#C4784A" opacity="0.6"/>
+<<<<<<< HEAD
 
               <path id="brow-left" d="M 105 118 Q 125 110 148 112" stroke="#2C1810" stroke-width="4" fill="none" stroke-linecap="round"/>
               <path id="brow-right" d="M 172 112 Q 195 110 215 118" stroke="#2C1810" stroke-width="4" fill="none" stroke-linecap="round"/>
@@ -757,6 +865,12 @@
               <ellipse cx="130" cy="148" rx="26" ry="20" fill="#C4784A" opacity="0.2"/>
               <ellipse cx="192" cy="148" rx="26" ry="20" fill="#C4784A" opacity="0.2"/>
 
+=======
+              <path id="brow-left" d="M 105 118 Q 125 110 148 112" stroke="#2C1810" stroke-width="4" fill="none" stroke-linecap="round"/>
+              <path id="brow-right" d="M 172 112 Q 195 110 215 118" stroke="#2C1810" stroke-width="4" fill="none" stroke-linecap="round"/>
+              <ellipse cx="130" cy="148" rx="26" ry="20" fill="#C4784A" opacity="0.2"/>
+              <ellipse cx="192" cy="148" rx="26" ry="20" fill="#C4784A" opacity="0.2"/>
+>>>>>>> 7fb4ba510767b55c2b2e54b33566cc8c073b54e2
               <g id="eye-left">
                 <ellipse cx="130" cy="145" rx="22" ry="16" fill="#F8F4EF"/>
                 <ellipse cx="130" cy="145" rx="13" ry="13" fill="#5A3010"/>
@@ -766,7 +880,10 @@
                 <path d="M 108 140 Q 130 130 152 140" stroke="#6A3C1A" stroke-width="2" fill="none" stroke-linecap="round"/>
                 <path d="M 110 152 Q 130 158 150 152" stroke="#8A5030" stroke-width="1" fill="none" stroke-linecap="round" opacity="0.5"/>
               </g>
+<<<<<<< HEAD
 
+=======
+>>>>>>> 7fb4ba510767b55c2b2e54b33566cc8c073b54e2
               <g id="eye-right">
                 <ellipse cx="192" cy="145" rx="22" ry="16" fill="#F8F4EF"/>
                 <ellipse cx="192" cy="145" rx="13" ry="13" fill="#5A3010"/>
@@ -776,11 +893,15 @@
                 <path d="M 170 140 Q 192 130 214 140" stroke="#6A3C1A" stroke-width="2" fill="none" stroke-linecap="round"/>
                 <path d="M 172 152 Q 192 158 212 152" stroke="#8A5030" stroke-width="1" fill="none" stroke-linecap="round" opacity="0.5"/>
               </g>
+<<<<<<< HEAD
 
+=======
+>>>>>>> 7fb4ba510767b55c2b2e54b33566cc8c073b54e2
               <path d="M 160 160 L 148 188 Q 154 194 160 195 Q 166 194 172 188 Z" fill="#C87848" opacity="0.35"/>
               <ellipse cx="152" cy="190" rx="8" ry="6" fill="#C07040" opacity="0.5"/>
               <ellipse cx="168" cy="190" rx="8" ry="6" fill="#C07040" opacity="0.5"/>
               <path d="M 160 148 Q 156 170 150 186" stroke="#C07040" stroke-width="1.5" fill="none" opacity="0.3" stroke-linecap="round"/>
+<<<<<<< HEAD
 
               <ellipse cx="96" cy="182" rx="30" ry="20" fill="url(#blushL)"/>
               <ellipse cx="224" cy="182" rx="30" ry="20" fill="url(#blushR)"/>
@@ -790,11 +911,21 @@
               <g id="mouth-group">
                 <path d="M 125 205 Q 135 200 148 202 Q 160 198 172 202 Q 185 200 195 205
                           Q 178 210 160 209 Q 142 210 125 205 Z" fill="#C86858"/>
+=======
+              <ellipse cx="96" cy="182" rx="30" ry="20" fill="url(#blushL)"/>
+              <ellipse cx="224" cy="182" rx="30" ry="20" fill="url(#blushR)"/>
+              <path d="M 156 196 Q 160 200 164 196" stroke="#B06030" stroke-width="1" fill="none" opacity="0.4"/>
+              <g id="mouth-group">
+                <path d="M 125 205 Q 135 200 148 202 Q 160 198 172 202 Q 185 200 195 205 Q 178 210 160 209 Q 142 210 125 205 Z" fill="#C86858"/>
+>>>>>>> 7fb4ba510767b55c2b2e54b33566cc8c073b54e2
                 <path d="M 125 205 Q 142 218 160 220 Q 178 218 195 205 Q 178 210 160 209 Q 142 210 125 205 Z" fill="#D47870"/>
                 <ellipse cx="160" cy="215" rx="18" ry="4" fill="#E89888" opacity="0.5"/>
                 <path id="mouth-path" d="M 125 205 Q 162 213 195 205" stroke="#A05040" stroke-width="1.5" fill="none" stroke-linecap="round"/>
               </g>
+<<<<<<< HEAD
 
+=======
+>>>>>>> 7fb4ba510767b55c2b2e54b33566cc8c073b54e2
               <path d="M 140 255 Q 160 265 180 255" stroke="#C4784A" stroke-width="1.5" fill="none" opacity="0.3"/>
               <circle cx="160" cy="98" r="5" fill="#CC2222" opacity="0.85"/>
               <circle cx="160" cy="98" r="3" fill="#FF4444" opacity="0.6"/>
@@ -844,9 +975,15 @@
         <div style="padding: 0 20px;">
           <div class="typing-indicator" id="typingIndicator">
             <span></span><span></span><span></span>
+            <span class="typing-label" id="typingLabel">Thinking...</span>
           </div>
         </div>
         <div class="input-zone">
+          <!-- Auto-lang detection banner -->
+          <div class="lang-auto-banner" id="langAutoBanner">
+            <span>🔍</span>
+            <span id="langAutoText">Language auto-detected</span>
+          </div>
           <div class="input-row">
             <button class="btn-voice" id="voiceBtn" onclick="toggleListen()" title="Speak your question">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -856,11 +993,9 @@
                 <line x1="8" y1="23" x2="16" y2="23"/>
               </svg>
             </button>
-            <input class="text-input" id="visitorInput" placeholder="Type or speak your question..." 
+            <input class="text-input" id="visitorInput" placeholder="Type or speak your question..."
                    onkeydown="if(event.key==='Enter') sendVisitorQuery()"/>
-            <button class="btn btn-primary" onclick="sendVisitorQuery()">
-              Ask ↗
-            </button>
+            <button class="btn btn-primary" onclick="sendVisitorQuery()">Ask ↗</button>
           </div>
           <div class="input-hints" id="hintChips">
             <div class="hint-chip" onclick="useHint(this)">What are the timings?</div>
@@ -946,28 +1081,71 @@
               <option>Other</option>
             </select>
           </div>
-          <button class="btn btn-primary" onclick="saveProfile()" style="justify-content:center">
-            Save Profile
-          </button>
+          <button class="btn btn-primary" onclick="saveProfile()" style="justify-content:center">Save Profile</button>
         </div>
       </div>
     </div>
   </div>
 
+<<<<<<< HEAD
+=======
+  </div><!-- /main-content -->
+
+>>>>>>> 7fb4ba510767b55c2b2e54b33566cc8c073b54e2
   <footer>
     <div class="footer-brand">
-      <span>SwagatAI v1.0</span>
+      <span>SwagatAI v2.0</span>
       <span>·</span>
       <span class="odisha-pride">Made for Odisha</span>
     </div>
-    <span>Offline-capable · Odia · Hindi · English</span>
+    <span>Offline-capable · Auto Language Detection · Fuzzy Matching</span>
     <div class="powered-by">
       <span>Python Backend · Lightweight AI · No high-speed internet needed</span>
     </div>
   </footer>
+<<<<<<< HEAD
 </div>
 
 <script>
+=======
+
+<!-- KB Edit Modal -->
+<div class="edit-modal-overlay" id="editModalOverlay">
+  <div class="edit-modal">
+    <div class="edit-modal-title">
+      ✏️ Edit Entry
+      <span class="edit-modal-badge" id="editModalBadge">trained</span>
+    </div>
+    <div class="edit-field">
+      <div class="edit-label">Question</div>
+      <textarea class="edit-input" id="editQuestion" rows="2"></textarea>
+    </div>
+    <div class="edit-field">
+      <div class="edit-label">Answer</div>
+      <textarea class="edit-input" id="editAnswer" rows="4"></textarea>
+    </div>
+    <div class="edit-field">
+      <div class="edit-label">Language</div>
+      <div class="edit-lang-row">
+        <select class="edit-lang-select" id="editLang">
+          <option value="or">Odia (ଓଡ଼ିଆ)</option>
+          <option value="hi">Hindi (हिन्दी)</option>
+          <option value="en">English</option>
+        </select>
+      </div>
+    </div>
+    <div class="edit-modal-actions">
+      <button class="btn-cancel-edit" onclick="closeEditModal()">Cancel</button>
+      <button class="btn-save-edit" id="editSaveBtn" onclick="saveKBEdit()">Save Changes</button>
+    </div>
+  </div>
+</div>
+
+</div><!-- /app-shell -->
+
+<script>
+// ─── STATE ────────────────────────────────────────────
+>>>>>>> 7fb4ba510767b55c2b2e54b33566cc8c073b54e2
 let lang = 'en';
 let mode = 'visitor';
 let isSpeaking = false;
@@ -976,8 +1154,15 @@ let accurateCount = 0;
 let knowledgeBase = [];
 let unanswered = [];
 let currentTab = 'train';
+<<<<<<< HEAD
 let trainRecognition = null;
 let recognition = null;
+=======
+let levelAnimFrame = null;
+
+const LANG_NAMES = { or: 'Odia', hi: 'Hindi', en: 'English' };
+const LANG_FLAGS = { or: 'ଓ', hi: 'ह', en: 'E' };
+>>>>>>> 7fb4ba510767b55c2b2e54b33566cc8c073b54e2
 
 const labels = {
   or: {
@@ -988,14 +1173,14 @@ const labels = {
     tagline: "ଆପଣଙ୍କ AI ଗ୍ରାହକ ସେବା ସହାୟକ",
   },
   hi: {
-    greeting: "नमस्कार! मैं स्वागता हूँ। मैं आपकी कैसे मदद कर सकती हूँ?",
+    greeting: "नमस्कार! मैं स्वागत हूँ। मैं आपकी कैसे मदद कर सकता हूँ?",
     placeholder: "अपना प्रश्न टाइप करें...",
     askBtn: "पूछें ↗",
     listening: "सुन रही हूँ...",
     tagline: "आपकी AI रिसेप्शन सहायक",
   },
   en: {
-    greeting: "Namaskara! I'm Swagata, your AI reception assistant. How may I help you today?",
+    greeting: "Namaskara! I'm Swagat, your A I reception assistant. How may I help you today?",
     placeholder: "Type or speak your question...",
     askBtn: "Ask ↗",
     listening: "Listening...",
@@ -1003,81 +1188,225 @@ const labels = {
   }
 };
 
+<<<<<<< HEAD
 window.onload = async () => {
   await fetchKB();
+=======
+// ─── INIT ───────────────────────────────────────────────
+window.onload = () => {
+  fetchKB();
+  checkAIStatus();   // ← Check if AI fallback is configured
+  renderSuggestions();
+>>>>>>> 7fb4ba510767b55c2b2e54b33566cc8c073b54e2
   updateStats();
   
   setTimeout(() => {
     addMessage('ai', labels[lang].greeting, 'Swagata');
     triggerSpeak(labels[lang].greeting);
   }, 800);
+
+  // Wire up Cancel button
+  document.getElementById('listenCancelBtn').onclick = (e) => {
+    e.preventDefault();
+    stopListening(true);
+  };
 };
 
+<<<<<<< HEAD
+=======
+async function checkAIStatus() {
+  try {
+    const res = await fetch('/api/ai-status');
+    const data = await res.json();
+    const badge = document.getElementById('fallbackBadge');
+    const modelShort = data.model.split('/').pop();
+    if (data.token_configured) {
+      badge.innerHTML = `✦ AI: ${modelShort}`;
+      badge.title = `Model: ${data.model}\nInference: HF Serverless API`;
+    } else {
+      badge.innerHTML = `⚠ AI: No token`;
+      badge.style.background = 'rgba(232,64,64,0.1)';
+      badge.style.borderColor = 'rgba(232,64,64,0.25)';
+      badge.style.color = '#FF9090';
+      badge.title = 'Add your HF token to source.txt to enable AI fallback';
+    }
+    badge.style.display = 'flex';
+  } catch(e) {
+    // Backend not running yet — silent
+  }
+}
+
+>>>>>>> 7fb4ba510767b55c2b2e54b33566cc8c073b54e2
 async function fetchKB() {
   try {
     const res = await fetch('/api/kb');
     knowledgeBase = await res.json();
     renderKB();
   } catch (err) {
+<<<<<<< HEAD
     console.error("Failed to load DB:", err);
   }
 }
 
 function setLang(l) {
+=======
+    console.log("DB Load Error - Ensure backend is running.");
+  }
+}
+
+// ─── LANGUAGE SWITCH ─────────────────────────────────────
+function setLang(l, autoDetected = false) {
+>>>>>>> 7fb4ba510767b55c2b2e54b33566cc8c073b54e2
   lang = l;
-  document.querySelectorAll('.lang-btn').forEach(b => b.classList.remove('active'));
-  document.querySelector(`.lang-btn[onclick="setLang('${l}')"]`).classList.add('active');
+  document.querySelectorAll('.lang-btn').forEach(b => b.classList.remove('active', 'auto-detected'));
+  const activeBtn = document.querySelector(`.lang-btn[onclick="setLang('${l}')"]`);
+  activeBtn.classList.add('active');
+
+  if (autoDetected) {
+    activeBtn.classList.add('auto-detected');
+    // Show the auto-detect banner
+    const banner = document.getElementById('langAutoBanner');
+    const bannerText = document.getElementById('langAutoText');
+    bannerText.textContent = `🔍 Auto-detected: ${LANG_NAMES[l]} — switched automatically`;
+    banner.classList.add('visible');
+    setTimeout(() => banner.classList.remove('visible'), 4000);
+    showToast(`Language auto-detected: ${LANG_NAMES[l]}`, 'info');
+  }
+
   document.getElementById('visitorInput').placeholder = labels[l].placeholder;
   document.getElementById('avatarTagline').textContent = labels[l].tagline;
-  updateHints(l);
 }
 
-function updateHints(l) {
-  const hints = {
-    or: ["ସମୟ କ'ଣ?", "ଟିକେଟ୍ ଦର?", "ଶୌଚାଳୟ କୁଆଡ଼େ?", "ପ୍ରବେଶ ନିୟମ?"],
-    hi: ["खुलने का समय?", "टिकट कितने का?", "वॉशरूम कहाँ है?", "नियम क्या हैं?"],
-    en: ["What are the timings?", "Ticket price?", "Where is the restroom?", "Contact number?"]
-  };
-  const c = document.getElementById('hintChips');
-  c.innerHTML = hints[l].map(h => `<div class="hint-chip" onclick="useHint(this)">${h}</div>`).join('');
+// ─── AUTO LANGUAGE DETECTION (from typed text) ───────────
+async function detectAndSwitchLang(text) {
+  if (!text || text.length < 4) return;
+  try {
+    const res = await fetch('/api/detect-lang', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text })
+    });
+    const data = await res.json();
+    const detectedLang = data.detected_lang;
+    if (detectedLang && detectedLang !== lang) {
+      setLang(detectedLang, true);
+    }
+  } catch (e) {
+    // Non-critical — silent fail
+  }
 }
 
+<<<<<<< HEAD
+=======
+// ─── MODE TOGGLE ──────────────────────────────────────────
+>>>>>>> 7fb4ba510767b55c2b2e54b33566cc8c073b54e2
 function toggleMode() {
-  mode = mode === 'visitor' ? 'owner' : 'visitor';
-  document.getElementById('modeLabel').textContent = mode === 'visitor' ? 'Visitor Mode' : 'Owner Mode';
-  showToast(mode === 'owner' ? 'Owner / Training Mode Active' : 'Visitor Mode Active', 'info');
+  if (mode === 'visitor') {
+    const pass = prompt("Enter Admin Password:");
+    if (pass === "swagat123") {
+      mode = 'owner';
+      document.getElementById('modeLabel').textContent = 'Owner Mode';
+      document.getElementById('appShell').classList.remove('visitor-mode');
+      showToast('Owner Mode Unlocked', 'success');
+    } else if (pass !== null) {
+      showToast('Incorrect password!', 'danger');
+    }
+  } else {
+    mode = 'visitor';
+    document.getElementById('modeLabel').textContent = 'Visitor Mode';
+    document.getElementById('appShell').classList.add('visitor-mode');
+    showToast('Visitor Mode Active (Locked)', 'info');
+  }
 }
 
+<<<<<<< HEAD
 function addMessage(role, text, name) {
+=======
+// ─── MESSAGING ────────────────────────────────────────────
+function addMessage(role, text, name, confidence = null, matchType = null, matchedQuestion = null, aiModel = null) {
+>>>>>>> 7fb4ba510767b55c2b2e54b33566cc8c073b54e2
   const feed = document.getElementById('convoFeed');
   const now = new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
   const div = document.createElement('div');
   div.className = `msg ${role}`;
+
+  // Confidence badge for KB responses
+  let confBadge = '';
+  if (role === 'ai' && confidence !== null && confidence > 0) {
+    const pct = Math.round(confidence * 100);
+    const cls = pct >= 80 ? 'confidence-high' : pct >= 62 ? 'confidence-mid' : 'confidence-low';
+    const icon = matchType === 'exact' || matchType === 'substring' ? '✓' : '~';
+    const label = (matchType === 'exact' || matchType === 'substring') ? 'exact match' : `${pct}% similar`;
+    confBadge = `<span class="confidence-badge ${cls}">${icon} ${label}</span>`;
+  }
+
+  // Matched question reference for fuzzy KB hits
+  let matchedRef = '';
+  if (role === 'ai' && matchedQuestion && matchType === 'fuzzy') {
+    matchedRef = `<div class="matched-ref">🔍 Matched: <em>"${matchedQuestion}"</em></div>`;
+  }
+
+  // AI model pill for fallback responses
+  let modelPill = '';
+  if (role === 'ai' && aiModel) {
+    const shortName = aiModel.split('/').pop(); // e.g. "Phi-3.5-mini-instruct"
+    modelPill = `<div><span class="ai-model-pill">✦ ${shortName}</span></div>`;
+  }
+
   div.innerHTML = `
     <div class="msg-avatar ${role === 'ai' ? 'ai-av' : 'visitor-av'}">${role === 'ai' ? 'SW' : 'V'}</div>
     <div>
-      <div class="msg-bubble">${text}</div>
+      <div class="msg-bubble">${text}${confBadge}${matchedRef}${modelPill}</div>
       <div class="msg-meta">${name || (role==='ai' ? 'Swagata' : 'Visitor')} · ${now}</div>
     </div>`;
   feed.appendChild(div);
   feed.scrollTop = feed.scrollHeight;
 }
 
-function showTyping(show) {
-  document.getElementById('typingIndicator').style.display = show ? 'flex' : 'none';
+function showTyping(show, label = 'Thinking...') {
+  const el = document.getElementById('typingIndicator');
+  const lbl = document.getElementById('typingLabel');
+  el.style.display = show ? 'flex' : 'none';
+  if (lbl) lbl.textContent = label;
 }
 
+<<<<<<< HEAD
+=======
+// ─── QUERY HANDLER ────────────────────────────────────────
+>>>>>>> 7fb4ba510767b55c2b2e54b33566cc8c073b54e2
 async function sendVisitorQuery() {
   const input = document.getElementById('visitorInput');
   const q = input.value.trim();
   if (!q) return;
+<<<<<<< HEAD
   
+=======
+
+  // Auto-detect language from typed text before sending
+  await detectAndSwitchLang(q);
+
+>>>>>>> 7fb4ba510767b55c2b2e54b33566cc8c073b54e2
   input.value = '';
   addMessage('visitor', q, 'Visitor');
   queryCount++;
   updateStats();
-  showTyping(true);
+  showTyping(true, 'Searching knowledge base...');
 
+  try {
+    const res = await fetch('/api/ask', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ query: q, language: lang })
+    });
+    const data = await res.json();
+
+    // If going to AI, update typing label
+    if (data.source === 'ai_fallback') {
+      showTyping(true, 'Asking AI...');
+      await new Promise(r => setTimeout(r, 400)); // brief visual pause
+    }
+
+<<<<<<< HEAD
   try {
     const res = await fetch('/api/ask', {
       method: 'POST',
@@ -1089,6 +1418,13 @@ async function sendVisitorQuery() {
     showTyping(false);
     addMessage('ai', data.answer, data.source === 'knowledge_base' ? 'Swagata' : 'Swagata · AI Assist');
     
+=======
+    showTyping(false);
+    const senderName = data.source === 'knowledge_base' ? 'Swagata' : 'Swagata · AI';
+    const aiModel = data.source === 'ai_fallback' ? data.ai_model : null;
+    addMessage('ai', data.answer, senderName, data.confidence || null, data.match_type || null, data.matched_question || null, aiModel);
+
+>>>>>>> 7fb4ba510767b55c2b2e54b33566cc8c073b54e2
     if (data.source === 'ai_fallback') {
       document.getElementById('fallbackBadge').style.display = 'flex';
       if (!unanswered.includes(q)) {
@@ -1099,16 +1435,26 @@ async function sendVisitorQuery() {
       document.getElementById('fallbackBadge').style.display = 'none';
       accurateCount++;
     }
+<<<<<<< HEAD
     
     triggerSpeak(data.answer);
     updateStats();
 
+=======
+
+    triggerSpeak(data.answer);
+    updateStats();
+>>>>>>> 7fb4ba510767b55c2b2e54b33566cc8c073b54e2
   } catch (err) {
     showTyping(false);
     addMessage('ai', "Server error. Please check backend connection.", 'System');
   }
 }
 
+<<<<<<< HEAD
+=======
+// ─── TRAINING ─────────────────────────────────────────────
+>>>>>>> 7fb4ba510767b55c2b2e54b33566cc8c073b54e2
 async function trainEntry() {
   const q = document.getElementById('trainQ').value.trim();
   const a = document.getElementById('trainA').value.trim();
@@ -1121,11 +1467,18 @@ async function trainEntry() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ question: q, answer: a, language: l })
     });
+<<<<<<< HEAD
     
     if (res.ok) {
       document.getElementById('trainQ').value = '';
       document.getElementById('trainA').value = '';
       await fetchKB(); 
+=======
+    if (res.ok) {
+      document.getElementById('trainQ').value = '';
+      document.getElementById('trainA').value = '';
+      await fetchKB();
+>>>>>>> 7fb4ba510767b55c2b2e54b33566cc8c073b54e2
       updateStats();
       showToast('✓ Added to Knowledge Base!', 'success');
     }
@@ -1134,6 +1487,7 @@ async function trainEntry() {
   }
 }
 
+<<<<<<< HEAD
 function trainByVoice() {
   const btn = document.querySelector('.train-form .btn-voice');
   
@@ -1182,6 +1536,104 @@ function stopTrainListen(btn) {
     trainRecognition = null; 
   }
   if (btn) btn.classList.remove('listening');
+=======
+async function removeKB(id) {
+  try {
+    const res = await fetch(`/api/kb/${id}`, { method: 'DELETE' });
+    if (res.ok) { await fetchKB(); updateStats(); }
+  } catch (e) {}
+}
+
+async function promoteKB(id) {
+  try {
+    const res = await fetch(`/api/kb/${id}/promote`, { method: 'POST' });
+    if (res.ok) {
+      await fetchKB();
+      showToast('✓ Entry promoted to trained knowledge base!', 'success');
+    }
+  } catch (e) {
+    showToast('Failed to promote entry', 'danger');
+  }
+}
+
+// ─── KB EDIT MODAL ────────────────────────────────────────
+let _editingId = null;
+
+function openEditModal(id) {
+  const entry = knowledgeBase.find(e => e.id === id);
+  if (!entry) return;
+
+  _editingId = id;
+
+  // Populate fields
+  document.getElementById('editQuestion').value = entry.question;
+  document.getElementById('editAnswer').value   = entry.answer;
+  document.getElementById('editLang').value     = entry.language;
+
+  // Badge: trained vs AI cached
+  const badge = document.getElementById('editModalBadge');
+  if (entry.ai_cached) {
+    badge.textContent  = '✦ AI Cached';
+    badge.className    = 'edit-modal-badge cached';
+  } else {
+    badge.textContent  = '✓ Trained';
+    badge.className    = 'edit-modal-badge trained';
+  }
+
+  document.getElementById('editSaveBtn').disabled = false;
+  document.getElementById('editModalOverlay').classList.add('active');
+  document.getElementById('editQuestion').focus();
+}
+
+function closeEditModal() {
+  _editingId = null;
+  document.getElementById('editModalOverlay').classList.remove('active');
+}
+
+async function saveKBEdit() {
+  if (!_editingId) return;
+
+  const question = document.getElementById('editQuestion').value.trim();
+  const answer   = document.getElementById('editAnswer').value.trim();
+  const language = document.getElementById('editLang').value;
+
+  if (!question || !answer) {
+    showToast('Question and answer cannot be empty.', 'info');
+    return;
+  }
+
+  const btn = document.getElementById('editSaveBtn');
+  btn.disabled = true;
+  btn.textContent = 'Saving...';
+
+  try {
+    const res = await fetch(`/api/kb/${_editingId}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ question, answer, language })
+    });
+
+    if (res.ok) {
+      await fetchKB();
+      updateStats();
+      closeEditModal();
+      showToast('✓ Entry updated successfully!', 'success');
+    } else {
+      showToast('Failed to save changes.', 'danger');
+      btn.disabled = false;
+      btn.textContent = 'Save Changes';
+    }
+  } catch (e) {
+    showToast('Network error — changes not saved.', 'danger');
+    btn.disabled = false;
+    btn.textContent = 'Save Changes';
+  }
+}
+
+function clearKB() {
+  if (!confirm('Clear all knowledge base entries?')) return;
+  showToast("Please remove entries individually or reset the DB file.", "info");
+>>>>>>> 7fb4ba510767b55c2b2e54b33566cc8c073b54e2
 }
 
 function renderKB() {
@@ -1189,15 +1641,60 @@ function renderKB() {
   if (knowledgeBase.length === 0) {
     list.innerHTML = '<div style="color:var(--muted);font-size:12px;padding:8px">No entries yet. Add some above!</div>';
   } else {
+<<<<<<< HEAD
     list.innerHTML = knowledgeBase.map(e => `
       <div class="trained-item" title="${e.a}">
         <span style="flex:1"><strong style="color:#E0EAF8">${e.q}</strong><br><span style="color:var(--muted);font-size:11px">${e.lang.toUpperCase()} · ${e.a.substring(0,50)}${e.a.length>50?'…':''}</span></span>
         <span onclick="removeKB(${e.id})" style="cursor:pointer;color:var(--muted);font-size:14px;flex-shrink:0">✕</span>
       </div>`).join('');
+=======
+    const trained = knowledgeBase.filter(e => !e.ai_cached);
+    const cached  = knowledgeBase.filter(e => e.ai_cached);
+
+    // Shared action buttons builder
+    const actions = (e) => {
+      const isCached = e.ai_cached;
+      return `
+        <span style="display:flex;gap:5px;flex-shrink:0;margin-left:6px;align-items:center">
+          ${isCached ? `<span onclick="promoteKB(${e.id})" style="cursor:pointer;font-size:10px;font-weight:600;color:var(--teal-glow);border:1px solid rgba(0,212,187,0.3);border-radius:6px;padding:2px 7px" title="Approve & make permanent">✓ Keep</span>` : ''}
+          <span onclick="openEditModal(${e.id})" style="cursor:pointer;font-size:12px;color:var(--muted);padding:2px 5px;border-radius:5px;border:1px solid rgba(255,255,255,0.08)" title="Edit this entry">✏️</span>
+          <span onclick="removeKB(${e.id})" style="cursor:pointer;color:var(--muted);font-size:13px" title="Delete">✕</span>
+        </span>`;
+    };
+
+    let html = '';
+
+    if (trained.length) {
+      html += `<div style="font-size:10px;font-weight:700;color:var(--teal-glow);letter-spacing:0.8px;text-transform:uppercase;padding:6px 2px 4px">✓ Trained (${trained.length})</div>`;
+      html += trained.map(e => `
+        <div class="trained-item">
+          <span style="flex:1">
+            <strong style="color:#E0EAF8">${e.question}</strong><br>
+            <span style="color:var(--muted);font-size:11px">${e.language.toUpperCase()} · ${e.answer.substring(0,55)}${e.answer.length>55?'…':''}</span>
+          </span>
+          ${actions(e)}
+        </div>`).join('');
+    }
+
+    if (cached.length) {
+      html += `<div style="font-size:10px;font-weight:700;color:var(--gold);letter-spacing:0.8px;text-transform:uppercase;padding:10px 2px 4px">✦ AI Cached (${cached.length}) — review &amp; edit</div>`;
+      html += cached.map(e => `
+        <div class="trained-item" style="border-color:rgba(240,165,0,0.2);background:rgba(240,165,0,0.04);">
+          <span style="flex:1">
+            <strong style="color:#F5DFA0">${e.question}</strong><br>
+            <span style="color:var(--muted);font-size:11px">${e.language.toUpperCase()} · ${e.answer.substring(0,55)}${e.answer.length>55?'…':''}</span>
+          </span>
+          ${actions(e)}
+        </div>`).join('');
+    }
+
+    list.innerHTML = html;
+>>>>>>> 7fb4ba510767b55c2b2e54b33566cc8c073b54e2
   }
   document.getElementById('kbCountLabel').textContent = knowledgeBase.length;
 }
 
+<<<<<<< HEAD
 async function removeKB(id) {
   try {
     const res = await fetch(`/api/kb/${id}`, { method: 'DELETE' });
@@ -1211,6 +1708,8 @@ async function removeKB(id) {
   }
 }
 
+=======
+>>>>>>> 7fb4ba510767b55c2b2e54b33566cc8c073b54e2
 function renderSuggestions() {
   const list = document.getElementById('suggestionsList');
   if (unanswered.length === 0) {
@@ -1225,10 +1724,9 @@ function renderSuggestions() {
 }
 
 function useSuggestion(q) {
-  switchTab('train', document.querySelector('.tab-btn'));
+  switchTab('train', document.querySelectorAll('.tab-btn')[0]);
   document.getElementById('trainQ').value = q;
   document.getElementById('trainA').focus();
-  showToast('Fill in the answer to train Swagata!', 'info');
 }
 
 function switchTab(tab, btn) {
@@ -1241,6 +1739,10 @@ function switchTab(tab, btn) {
   else document.querySelectorAll('.tab-btn')[['train','kb','suggestions'].indexOf(tab)].classList.add('active');
 }
 
+<<<<<<< HEAD
+=======
+// ─── SPEAKING ANIMATION (TTS) ─────────────────────────────
+>>>>>>> 7fb4ba510767b55c2b2e54b33566cc8c073b54e2
 function triggerSpeak(text) {
   const shell = document.getElementById('appShell');
   const face = document.getElementById('face');
@@ -1248,6 +1750,7 @@ function triggerSpeak(text) {
   face.classList.add('speaking');
   document.getElementById('statusText').textContent = 'Speaking...';
 
+<<<<<<< HEAD
   const duration = Math.max(1500, text.length * 55);
   
   if ('speechSynthesis' in window) {
@@ -1257,8 +1760,32 @@ function triggerSpeak(text) {
     utter.onend = () => stopSpeaking();
     window.speechSynthesis.cancel();
     window.speechSynthesis.speak(utter);
+=======
+  if (lang === 'or') {
+    fetch('/api/tts/odia', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text })
+    })
+    .then(res => res.blob())
+    .then(blob => {
+      const audio = new Audio(URL.createObjectURL(blob));
+      audio.onended = stopSpeaking;
+      audio.play();
+    })
+    .catch(stopSpeaking);
+>>>>>>> 7fb4ba510767b55c2b2e54b33566cc8c073b54e2
   } else {
-    setTimeout(stopSpeaking, duration);
+    if ('speechSynthesis' in window) {
+      const utter = new SpeechSynthesisUtterance(text);
+      utter.lang = lang === 'hi' ? 'hi-IN' : 'en-IN';
+      utter.rate = 0.9; utter.pitch = 1.1;
+      utter.onend = stopSpeaking;
+      window.speechSynthesis.cancel();
+      window.speechSynthesis.speak(utter);
+    } else {
+      setTimeout(stopSpeaking, Math.max(1500, text.length * 55));
+    }
   }
 }
 
@@ -1267,44 +1794,265 @@ function stopSpeaking() {
   const face = document.getElementById('face');
   shell.classList.remove('speaking');
   face.classList.remove('speaking');
-  document.getElementById('statusText').textContent = labels[lang]?.greeting?.substring(0,14) + '...' || 'Ready to help';
+  document.getElementById('statusText').textContent = 'Ready to help';
 }
 
+<<<<<<< HEAD
+=======
+// ─── MIC LEVEL METER (visual feedback while recording) ─────
+function startLevelMeter(stream) {
+  const ctx = new AudioContext();
+  const src = ctx.createMediaStreamSource(stream);
+  const analyser = ctx.createAnalyser();
+  analyser.fftSize = 512;
+  src.connect(analyser);
+  const buf = new Uint8Array(analyser.frequencyBinCount);
+  const fill = document.getElementById('levelFill');
+
+  function tick() {
+    analyser.getByteFrequencyData(buf);
+    const avg = buf.reduce((s, v) => s + v, 0) / buf.length;
+    fill.style.width = Math.min(100, avg * 2) + '%';
+    levelAnimFrame = requestAnimationFrame(tick);
+  }
+  tick();
+
+  return () => {
+    cancelAnimationFrame(levelAnimFrame);
+    fill.style.width = '0%';
+    try { ctx.close(); } catch(e) {}
+  };
+}
+
+// ─── VOICE INPUT (STT LOGIC) ──────────────────────────────
+let recognition = null;
+let isOdiaBackendRecording = false;
+let stopLevelMeterFn = null;
+
+>>>>>>> 7fb4ba510767b55c2b2e54b33566cc8c073b54e2
 function toggleListen() {
   const overlay = document.getElementById('listenOverlay');
   const btn = document.getElementById('voiceBtn');
-  overlay.classList.add('active');
-  btn.classList.add('listening');
-  document.getElementById('listenLang').textContent = labels[lang].listening;
+  const submitBtn = document.getElementById('listenSubmitBtn');
 
-  if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
-    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-    recognition = new SR();
-    recognition.lang = lang === 'or' ? 'or-IN' : lang === 'hi' ? 'hi-IN' : 'en-IN';
-    recognition.interimResults = false;
-    recognition.onresult = (e) => {
-      const transcript = e.results[0][0].transcript;
-      document.getElementById('visitorInput').value = transcript;
-      stopListening();
-      setTimeout(() => sendVisitorQuery(), 300);
-    };
-    recognition.onerror = stopListening;
-    recognition.onend = stopListening;
-    recognition.start();
+  overlay.classList.add('active');
+  if (btn) btn.classList.add('listening');
+
+  if (lang === 'or') {
+    // ODIA: Hardware recording via backend
+    if (!isOdiaBackendRecording) {
+      document.getElementById('listenLang').textContent = "ମୁଁ ଶୁଣୁଛି... (Listening)";
+      submitBtn.style.display = 'block';
+      isOdiaBackendRecording = true;
+
+      fetch('/api/listen/odia/start', { method: 'POST' })
+        .catch(() => { showToast("Failed to start hardware mic.", "danger"); stopListening(true); });
+
+      // Try to get mic stream for level meter (visual only)
+      navigator.mediaDevices?.getUserMedia({ audio: true })
+        .then(stream => {
+          stopLevelMeterFn = startLevelMeter(stream);
+          // Don't capture audio here — backend handles it
+          // We just want the analyser for visual feedback
+        })
+        .catch(() => {}); // Non-critical
+    }
   } else {
+<<<<<<< HEAD
     setTimeout(() => {
       document.getElementById('visitorInput').value = "Please test in Chrome or Edge for voice recognition.";
       stopListening();
     }, 2000);
+=======
+    // ENGLISH / HINDI: Web Speech API with auto-lang detection
+    document.getElementById('listenLang').textContent = labels[lang].listening;
+    submitBtn.style.display = 'none';
+
+    if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+      const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+      recognition = new SR();
+      // Use 'mul' (multilingual) or try both langs
+      recognition.lang = lang === 'hi' ? 'hi-IN' : 'en-IN';
+      recognition.interimResults = false;
+      recognition.maxAlternatives = 3;
+
+      recognition.onresult = async (e) => {
+        // Pick the best alternative
+        const transcript = e.results[0][0].transcript;
+        document.getElementById('visitorInput').value = transcript;
+
+        // ENHANCEMENT 3: Auto-detect language from transcribed result
+        const detectedLang = await detectLangFromText(transcript);
+        if (detectedLang && detectedLang !== lang) {
+          setLang(detectedLang, true);
+        }
+
+        stopListening(false);
+        setTimeout(() => sendVisitorQuery(), 300);
+      };
+      recognition.onerror = (e) => {
+        if (e.error !== 'aborted') showToast("Mic error: " + e.error, "danger");
+        stopListening(true);
+      };
+      recognition.onend = () => stopListening(true);
+      try { recognition.start(); } catch(e) { stopListening(true); }
+    }
+>>>>>>> 7fb4ba510767b55c2b2e54b33566cc8c073b54e2
   }
 }
 
-function stopListening() {
-  if (recognition) { try { recognition.stop(); } catch(e){} recognition = null; }
-  document.getElementById('listenOverlay').classList.remove('active');
-  document.getElementById('voiceBtn').classList.remove('listening');
+// ─── DETECT LANG FROM TEXT (client-side heuristic) ───────
+async function detectLangFromText(text) {
+  // Fast client-side check first (no network)
+  const odiaChars = (text.match(/[\u0B00-\u0B7F]/g) || []).length;
+  const hindiChars = (text.match(/[\u0900-\u097F]/g) || []).length;
+  const total = text.replace(/\s/g, '').length;
+
+  if (total > 0) {
+    if (odiaChars / total > 0.3) return 'or';
+    if (hindiChars / total > 0.3) return 'hi';
+  }
+
+  // Fallback to backend detection for Roman script
+  try {
+    const res = await fetch('/api/detect-lang', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text })
+    });
+    const data = await res.json();
+    return data.detected_lang || null;
+  } catch (e) {
+    return null;
+  }
 }
 
+<<<<<<< HEAD
+=======
+// ─── ODIA FINISH BUTTON ──────────────────────────────────
+async function stopOdiaAndProcess() {
+  if (!isOdiaBackendRecording) return;
+  document.getElementById('listenLang').textContent = "Processing...";
+  document.getElementById('listenSubmitBtn').style.display = 'none';
+
+  if (stopLevelMeterFn) { stopLevelMeterFn(); stopLevelMeterFn = null; }
+
+  try {
+    const res = await fetch('/api/listen/odia/stop', { method: 'POST' });
+    const data = await res.json();
+
+    if (data.text) {
+      document.getElementById('visitorInput').value = data.text;
+
+      // ENHANCEMENT 3: Use backend-returned detected_lang
+      const detectedLang = data.detected_lang || 'or';
+      if (detectedLang !== lang) {
+        setLang(detectedLang, true);
+      }
+
+      setTimeout(() => sendVisitorQuery(), 300);
+    } else {
+      showToast("Didn't catch that clearly. Please try again.", "info");
+    }
+    stopListening(false);
+  } catch (e) {
+    showToast("Backend AI Error.", "danger");
+    stopListening(true);
+  }
+}
+
+function stopListening(forceCancel = false) {
+  const overlay = document.getElementById('listenOverlay');
+  if (overlay) overlay.classList.remove('active');
+  const btn = document.getElementById('voiceBtn');
+  if (btn) btn.classList.remove('listening');
+  document.getElementById('listenSubmitBtn').style.display = 'none';
+  document.getElementById('levelFill').style.width = '0%';
+
+  if (stopLevelMeterFn) { stopLevelMeterFn(); stopLevelMeterFn = null; }
+
+  if (recognition) {
+    recognition.onend = null; recognition.onerror = null;
+    try { forceCancel ? recognition.abort() : recognition.stop(); } catch(e) {}
+    recognition = null;
+  }
+
+  if (isOdiaBackendRecording && forceCancel) {
+    isOdiaBackendRecording = false;
+    fetch('/api/listen/odia/stop', { method: 'POST' });
+  }
+  isOdiaBackendRecording = false;
+}
+
+// ─── ODIA TRAINING MIC ────────────────────────────────────
+let trainRecognition = null;
+let isTrainOdiaRecording = false;
+
+function trainByVoice() {
+  const btn = document.querySelector('.train-form .btn-voice');
+  const selectedLang = document.getElementById('trainLang').value;
+
+  if (selectedLang === 'or') {
+    if (!isTrainOdiaRecording) {
+      if (btn) btn.classList.add('listening');
+      showToast('ମୁଁ ଶୁଣୁଛି... ପୁଣି ଦବାନ୍ତୁ ସ୍ଥଗିତ କରିବାକୁ', 'info');
+      isTrainOdiaRecording = true;
+      fetch('/api/listen/odia/start', { method: 'POST' });
+    } else {
+      showToast('Processing Training Audio...', 'info');
+      if (btn) btn.classList.remove('listening');
+      fetch('/api/listen/odia/stop', { method: 'POST' })
+        .then(res => res.json())
+        .then(data => {
+          if (data.text) {
+            document.getElementById('trainA').value = data.text;
+            showToast('Odia Voice captured!', 'success');
+          } else {
+            showToast("No speech detected.", "info");
+          }
+          isTrainOdiaRecording = false;
+        });
+    }
+  } else {
+    if (btn && btn.classList.contains('listening')) { stopTrainListen(btn, false); return; }
+    if (btn) btn.classList.add('listening');
+    showToast('Listening... Speak the answer now.', 'info');
+
+    if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+      const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+      trainRecognition = new SR();
+      trainRecognition.lang = selectedLang === 'hi' ? 'hi-IN' : 'en-IN';
+      trainRecognition.interimResults = false;
+
+      trainRecognition.onresult = (e) => {
+        document.getElementById('trainA').value = e.results[0][0].transcript;
+        stopTrainListen(btn, false);
+        showToast('Voice captured!', 'success');
+      };
+      trainRecognition.onerror = (e) => {
+        if (e.error !== 'aborted') showToast('Mic error: ' + e.error, 'danger');
+        stopTrainListen(btn, true);
+      };
+      trainRecognition.onend = () => stopTrainListen(btn, true);
+      try { trainRecognition.start(); } catch(e) { stopTrainListen(btn, true); }
+    }
+  }
+}
+
+function stopTrainListen(btn, forceCancel = false) {
+  if (trainRecognition) {
+    try { trainRecognition.abort(); } catch(e) {}
+    trainRecognition = null;
+  }
+  if (isTrainOdiaRecording && forceCancel) {
+    isTrainOdiaRecording = false;
+    fetch('/api/listen/odia/stop', { method: 'POST' });
+  }
+  if (btn) btn.classList.remove('listening');
+}
+
+// ─── UTILS ────────────────────────────────────────────────
+>>>>>>> 7fb4ba510767b55c2b2e54b33566cc8c073b54e2
 function useHint(el) {
   document.getElementById('visitorInput').value = el.textContent;
   document.getElementById('visitorInput').focus();
@@ -1312,28 +2060,62 @@ function useHint(el) {
 
 function updateStats() {
   document.getElementById('statQueries').textContent = queryCount;
+  const trained = knowledgeBase.filter(e => !e.ai_cached).length;
+  const cached  = knowledgeBase.filter(e => e.ai_cached).length;
   document.getElementById('statKB').textContent = knowledgeBase.length;
+  document.getElementById('kbCountLabel').textContent =
+    `${knowledgeBase.length} (${trained} trained, ${cached} AI cached)`;
   const acc = queryCount > 0 ? Math.round((accurateCount / queryCount) * 100) + '%' : '—';
   document.getElementById('statAcc').textContent = acc;
 }
 
 function saveProfile() {
   const name = document.getElementById('bizName').value;
-  showToast(`Profile saved: ${name}`, 'success');
+  fetch('/api/profile', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ name, biz_type: document.getElementById('bizType').value })
+  }).then(() => showToast(`Profile saved: ${name}`, 'success'))
+    .catch(() => showToast('Save failed', 'danger'));
 }
 
+<<<<<<< HEAD
 function showToast(msg, type='info') {
+=======
+function showToast(msg, type = 'info') {
+>>>>>>> 7fb4ba510767b55c2b2e54b33566cc8c073b54e2
   const c = document.getElementById('toastContainer');
   const t = document.createElement('div');
   t.className = `toast ${type}`;
   t.textContent = msg;
   c.appendChild(t);
-  setTimeout(() => { t.style.opacity = '0'; t.style.transform = 'translateX(20px)'; t.style.transition = 'all 0.3s'; setTimeout(() => t.remove(), 300); }, 3000);
+  setTimeout(() => {
+    t.style.opacity = '0';
+    t.style.transform = 'translateX(20px)';
+    t.style.transition = 'all 0.3s';
+    setTimeout(() => t.remove(), 300);
+  }, 3000);
 }
 
+<<<<<<< HEAD
+=======
+// ─── KEYBOARD SHORTCUTS ────────────────────────────────────
+>>>>>>> 7fb4ba510767b55c2b2e54b33566cc8c073b54e2
 document.addEventListener('keydown', e => {
-  if (e.key === 'Escape') stopListening();
-  if ((e.ctrlKey || e.metaKey) && e.key === 'm') { e.preventDefault(); toggleListen(); }
+  if (e.key === 'Escape') {
+    stopListening(true);
+    stopTrainListen(document.querySelector('.train-form .btn-voice'), true);
+    closeEditModal();
+  }
+  if ((e.ctrlKey || e.metaKey) && e.key === 'm') {
+    e.preventDefault();
+    toggleListen();
+  }
+});
+
+// Close edit modal when clicking the dark overlay behind it
+document.getElementById('editModalOverlay').addEventListener('click', function(e) {
+  if (e.target === this) closeEditModal();
 });
 </script>
 </body>
