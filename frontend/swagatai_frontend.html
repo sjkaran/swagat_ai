@@ -6,7 +6,6 @@
 <title>SwagatAI — Smart Reception Assistant</title>
 <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@400;600;700;800&family=Noto+Sans+Odia:wght@400;600&family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;1,400&display=swap" rel="stylesheet"/>
 <style>
-  /* [All CSS remains exactly as you originally designed it] */
   :root {
     --saffron: #FF6B00;
     --saffron-light: #FF8C3A;
@@ -47,6 +46,7 @@
     overflow-x: hidden;
   }
 
+  /* ─── ANIMATED BACKGROUND ─── */
   .bg-layer {
     position: fixed; inset: 0; z-index: 0;
     background: radial-gradient(ellipse 80% 60% at 50% 0%, #1a2540 0%, var(--night) 70%);
@@ -64,6 +64,7 @@
     to { opacity: 1; }
   }
 
+  /* grid overlay */
   .bg-grid {
     position: fixed; inset: 0; z-index: 0; opacity: 0.03;
     background-image: linear-gradient(var(--teal-glow) 1px, transparent 1px),
@@ -71,6 +72,7 @@
     background-size: 48px 48px;
   }
 
+  /* ─── LAYOUT ─── */
   .app-shell {
     position: relative; z-index: 1;
     display: grid;
@@ -78,6 +80,7 @@
     min-height: 100vh;
   }
 
+  /* ─── HEADER ─── */
   header {
     display: flex; align-items: center; justify-content: space-between;
     padding: 18px 36px;
@@ -136,6 +139,7 @@
     50% { box-shadow: 0 0 0 6px rgba(46,204,113,0); }
   }
 
+  /* ─── MAIN CONTENT ─── */
   .main-content {
     display: grid;
     grid-template-columns: 340px 1fr 300px;
@@ -144,6 +148,7 @@
     align-items: start;
   }
 
+  /* ─── LEFT PANEL: AVATAR ─── */
   .avatar-panel {
     display: flex; flex-direction: column; align-items: center; gap: 20px;
   }
@@ -154,6 +159,7 @@
     flex-shrink: 0;
   }
 
+  /* Outer glowing ring */
   .orb-ring {
     position: absolute; inset: -12px;
     border-radius: 50%;
@@ -179,6 +185,7 @@
     to { box-shadow: 0 0 60px rgba(0,212,187,0.25), 0 0 100px rgba(255,107,0,0.12); }
   }
 
+  /* Face SVG */
   .face-svg-wrap {
     position: absolute; inset: 0; border-radius: 50%; overflow: hidden;
     background: radial-gradient(circle at 35% 35%, #F7D4B5, #D4895A);
@@ -188,6 +195,7 @@
     width: 100%; height: 100%;
   }
 
+  /* Blink animation */
   @keyframes blink {
     0%, 90%, 100% { transform: scaleY(1); }
     95% { transform: scaleY(0.05); }
@@ -197,6 +205,7 @@
   #eye-left { animation: blink 4.5s ease-in-out infinite; transform-origin: 130px 145px; }
   #eye-right { animation: blink 4.5s ease-in-out infinite 0.1s; transform-origin: 192px 145px; }
 
+  /* Mouth speaking animation */
   @keyframes speakMouth {
     0%,100% { d: path("M 122 185 Q 162 195 202 185"); }
     25% { d: path("M 122 188 Q 162 202 202 188"); }
@@ -215,6 +224,7 @@
     animation: speakMouth 0.35s ease-in-out infinite;
   }
 
+  /* Head subtle bob */
   @keyframes headBob {
     0%,100% { transform: translateY(0px) rotate(0deg); }
     33% { transform: translateY(-3px) rotate(0.5deg); }
@@ -224,6 +234,7 @@
     animation: headBob 5s ease-in-out infinite;
   }
 
+  /* Eyebrow raise on speaking */
   @keyframes browRaise {
     0%,100% { transform: translateY(0); }
     50% { transform: translateY(-3px); }
@@ -233,6 +244,7 @@
     animation: browRaise 0.6s ease-in-out infinite;
   }
 
+  /* Status badge on orb */
   .orb-status {
     position: absolute; bottom: 10px; left: 50%;
     transform: translateX(-50%);
@@ -270,6 +282,7 @@
   .app-shell.speaking .speaking-wave { display: flex; }
   .app-shell.speaking .status-text { display: none; }
 
+  /* Avatar info */
   .avatar-name {
     text-align: center;
     font-family: 'Baloo 2', sans-serif;
@@ -283,6 +296,7 @@
     letter-spacing: 0.3px;
   }
 
+  /* Quick stats row */
   .stats-row {
     display: flex; gap: 12px; width: 100%;
   }
@@ -304,6 +318,7 @@
     text-transform: uppercase; letter-spacing: 0.5px;
   }
 
+  /* ─── CENTER PANEL: CONVERSATION ─── */
   .convo-panel {
     display: flex; flex-direction: column; gap: 16px;
   }
@@ -327,6 +342,7 @@
   }
   .panel-icon { font-size: 14px; }
 
+  /* Conversation feed */
   .convo-feed {
     padding: 20px;
     display: flex; flex-direction: column; gap: 14px;
@@ -385,6 +401,7 @@
   }
   .visitor .msg-meta { text-align: right; }
 
+  /* Typing indicator */
   .typing-indicator {
     display: none; align-items: center; gap: 5px; padding: 10px 14px;
     background: rgba(0,168,150,0.08);
@@ -404,6 +421,7 @@
     40% { transform: scale(1); opacity: 1; }
   }
 
+  /* Input zone */
   .input-zone {
     padding: 16px 20px;
     border-top: 1px solid rgba(255,255,255,0.06);
@@ -472,6 +490,7 @@
   }
   .hint-chip:hover { border-color: var(--teal-light); color: var(--teal-light); background: rgba(0,212,187,0.06); }
 
+  /* Fallback AI badge */
   .ai-fallback-badge {
     display: inline-flex; align-items: center; gap: 5px;
     background: rgba(240,165,0,0.1);
@@ -480,6 +499,7 @@
     font-size: 10px; color: var(--gold); font-weight: 500;
   }
 
+  /* ─── RIGHT PANEL: TRAINING ─── */
   .training-panel {
     display: flex; flex-direction: column; gap: 14px;
   }
@@ -515,6 +535,7 @@
   .btn-saffron:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(255,107,0,0.35); }
   .btn-saffron:active { transform: translateY(0); }
 
+  /* Suggestions list */
   .suggestions-list {
     display: flex; flex-direction: column; gap: 8px;
     padding: 12px 16px;
@@ -539,6 +560,7 @@
     font-weight: 600;
   }
 
+  /* Knowledge base count */
   .kb-row {
     display: flex; align-items: center; justify-content: space-between;
     padding: 10px 16px;
@@ -547,6 +569,7 @@
   }
   .kb-count { color: var(--teal-glow); font-weight: 600; }
 
+  /* Trained items */
   .trained-list {
     display: flex; flex-direction: column; gap: 6px;
     padding: 10px 16px;
@@ -561,6 +584,7 @@
   }
   .trained-item::before { content: '✓'; color: var(--teal-glow); flex-shrink: 0; font-size: 11px; margin-top: 1px; }
 
+  /* ─── FOOTER ─── */
   footer {
     text-align: center;
     padding: 14px 36px;
@@ -577,6 +601,7 @@
     font-weight: 600;
   }
 
+  /* ─── VOICE RIPPLE (full screen listening overlay) ─── */
   .listen-overlay {
     display: none;
     position: fixed; inset: 0; z-index: 100;
@@ -617,6 +642,7 @@
   }
   .listen-cancel:hover { background: rgba(255,255,255,0.14); }
 
+  /* ─── TOAST ─── */
   .toast-container {
     position: fixed; bottom: 80px; right: 24px;
     display: flex; flex-direction: column; gap: 8px; z-index: 200;
@@ -633,8 +659,8 @@
   }
   .toast.success { background: rgba(46,204,113,0.15); border: 1px solid rgba(46,204,113,0.3); color: #7FFFC4; }
   .toast.info { background: rgba(0,168,150,0.15); border: 1px solid rgba(0,212,187,0.3); color: var(--teal-glow); }
-  .toast.danger { background: rgba(232,64,64,0.15); border: 1px solid rgba(232,64,64,0.3); color: #FF7070; }
 
+  /* Tab switcher for right panel */
   .tab-bar {
     display: flex; padding: 12px 16px 0;
     gap: 4px; border-bottom: 1px solid rgba(255,255,255,0.06);
@@ -647,6 +673,7 @@
   }
   .tab-btn.active { color: var(--saffron); border-bottom-color: var(--saffron); }
 
+  /* scrollbar global */
   ::-webkit-scrollbar { width: 4px; }
   ::-webkit-scrollbar-track { background: transparent; }
   ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.08); border-radius: 2px; }
@@ -656,6 +683,7 @@
 <div class="bg-layer"></div>
 <div class="bg-grid"></div>
 
+<!-- Listening overlay -->
 <div class="listen-overlay" id="listenOverlay">
   <div class="listen-ripple">🎤</div>
   <div class="listen-text" id="listenLang">Listening...</div>
@@ -663,9 +691,12 @@
   <div class="listen-cancel" onclick="stopListening()">Cancel</div>
 </div>
 
+<!-- Toast -->
 <div class="toast-container" id="toastContainer"></div>
 
 <div class="app-shell" id="appShell">
+
+  <!-- HEADER -->
   <header>
     <div class="logo-group">
       <div class="logo-icon">ସ୍ୱ</div>
@@ -687,22 +718,28 @@
     </div>
   </header>
 
+  <!-- MAIN -->
   <div class="main-content">
+
+    <!-- LEFT: AVATAR -->
     <div class="avatar-panel">
       <div class="orb-container">
         <div class="orb-ring"></div>
         <div class="face-svg-wrap">
           <svg id="face" viewBox="0 0 320 340" xmlns="http://www.w3.org/2000/svg">
             <defs>
+              <!-- Skin gradient -->
               <radialGradient id="skinGrad" cx="40%" cy="30%" r="65%">
                 <stop offset="0%" stop-color="#F8D5B5"/>
                 <stop offset="60%" stop-color="#E8A87C"/>
                 <stop offset="100%" stop-color="#C4784A"/>
               </radialGradient>
+              <!-- Hair gradient -->
               <radialGradient id="hairGrad" cx="50%" cy="0%" r="70%">
                 <stop offset="0%" stop-color="#3D2010"/>
                 <stop offset="100%" stop-color="#120A04"/>
               </radialGradient>
+              <!-- Cheek blush -->
               <radialGradient id="blushL" cx="50%" cy="50%" r="50%">
                 <stop offset="0%" stop-color="#E88060" stop-opacity="0.35"/>
                 <stop offset="100%" stop-color="#E88060" stop-opacity="0"/>
@@ -711,96 +748,147 @@
                 <stop offset="0%" stop-color="#E88060" stop-opacity="0.35"/>
                 <stop offset="100%" stop-color="#E88060" stop-opacity="0"/>
               </radialGradient>
+              <!-- Eye gloss -->
               <radialGradient id="eyeGloss" cx="35%" cy="30%" r="60%">
                 <stop offset="0%" stop-color="#FFFFFF" stop-opacity="0.8"/>
                 <stop offset="100%" stop-color="#FFFFFF" stop-opacity="0"/>
               </radialGradient>
+              <!-- Neck shadow -->
               <linearGradient id="neckGrad" x1="0" y1="0" x2="0" y2="1">
                 <stop offset="0%" stop-color="#D4895A"/>
                 <stop offset="100%" stop-color="#B5713A"/>
               </linearGradient>
+              <!-- Clip for face circle -->
               <clipPath id="faceClip">
                 <ellipse cx="160" cy="158" rx="130" ry="148"/>
               </clipPath>
             </defs>
 
             <g id="head-group">
+
+              <!-- NECK -->
               <rect x="130" y="280" width="60" height="60" rx="6" fill="url(#neckGrad)"/>
+              <!-- Neck shadow line -->
               <rect x="148" y="282" width="4" height="50" rx="2" fill="#B06030" opacity="0.25"/>
+
+              <!-- COLLAR / CLOTHING -->
               <path d="M 60 330 Q 90 295 130 288 L 160 295 L 190 288 Q 230 295 260 330 Z" fill="#1A3A5C"/>
               <path d="M 130 288 L 160 310 L 190 288 L 160 295 Z" fill="#0D2A45"/>
+              <!-- Clothing detail -->
               <path d="M 80 330 Q 110 310 130 300" stroke="#2A5080" stroke-width="1.5" fill="none" opacity="0.6"/>
               <path d="M 240 330 Q 210 310 190 300" stroke="#2A5080" stroke-width="1.5" fill="none" opacity="0.6"/>
 
+              <!-- MAIN FACE ELLIPSE -->
               <ellipse cx="160" cy="158" rx="130" ry="148" fill="url(#skinGrad)"/>
 
+              <!-- FACE SHADING (clip to face) -->
               <g clip-path="url(#faceClip)">
+                <!-- Side shadow left -->
                 <ellipse cx="48" cy="160" rx="55" ry="120" fill="#C4784A" opacity="0.3"/>
+                <!-- Side shadow right -->
                 <ellipse cx="272" cy="160" rx="55" ry="120" fill="#C4784A" opacity="0.3"/>
+                <!-- Forehead light -->
                 <ellipse cx="160" cy="80" rx="70" ry="55" fill="#FAE0C0" opacity="0.35"/>
               </g>
 
+              <!-- HAIR (drawn over face top) -->
+              <!-- Back hair volume -->
               <ellipse cx="160" cy="60" rx="128" ry="75" fill="url(#hairGrad)"/>
+              <!-- Hair top -->
               <path d="M 40 80 Q 45 20 100 10 Q 130 4 160 4 Q 190 4 220 10 Q 275 20 280 80
                         Q 260 50 220 42 Q 190 36 160 36 Q 130 36 100 42 Q 60 50 40 80 Z" fill="#1A0E08"/>
+              <!-- Hair parting / side swept -->
               <path d="M 80 36 Q 120 28 160 30" stroke="#2A1A0C" stroke-width="3" fill="none" opacity="0.5"/>
+              <!-- Hair highlight -->
               <path d="M 100 12 Q 130 8 155 10" stroke="#4A2810" stroke-width="2.5" fill="none" opacity="0.8" stroke-linecap="round"/>
 
+              <!-- EAR LEFT -->
               <ellipse cx="33" cy="165" rx="14" ry="20" fill="#D4895A"/>
               <ellipse cx="35" cy="165" rx="9" ry="14" fill="#C4784A" opacity="0.6"/>
+              <!-- EAR RIGHT -->
               <ellipse cx="287" cy="165" rx="14" ry="20" fill="#D4895A"/>
               <ellipse cx="285" cy="165" rx="9" ry="14" fill="#C4784A" opacity="0.6"/>
 
+              <!-- EYEBROWS -->
               <path id="brow-left" d="M 105 118 Q 125 110 148 112" stroke="#2C1810" stroke-width="4" fill="none" stroke-linecap="round"/>
               <path id="brow-right" d="M 172 112 Q 195 110 215 118" stroke="#2C1810" stroke-width="4" fill="none" stroke-linecap="round"/>
 
+              <!-- EYES -->
+              <!-- Eye socket shadow left -->
               <ellipse cx="130" cy="148" rx="26" ry="20" fill="#C4784A" opacity="0.2"/>
+              <!-- Eye socket shadow right -->
               <ellipse cx="192" cy="148" rx="26" ry="20" fill="#C4784A" opacity="0.2"/>
 
+              <!-- Eye white left -->
               <g id="eye-left">
                 <ellipse cx="130" cy="145" rx="22" ry="16" fill="#F8F4EF"/>
+                <!-- Iris left -->
                 <ellipse cx="130" cy="145" rx="13" ry="13" fill="#5A3010"/>
+                <!-- Pupil left -->
                 <ellipse cx="130" cy="145" rx="8" ry="8" fill="#1A0A04"/>
+                <!-- Eye gloss left -->
                 <ellipse cx="124" cy="140" rx="5" ry="4" fill="url(#eyeGloss)"/>
+                <!-- Mini highlight -->
                 <circle cx="135" cy="148" r="1.5" fill="white" opacity="0.6"/>
+                <!-- Upper eyelid -->
                 <path d="M 108 140 Q 130 130 152 140" stroke="#6A3C1A" stroke-width="2" fill="none" stroke-linecap="round"/>
+                <!-- Lower lash line -->
                 <path d="M 110 152 Q 130 158 150 152" stroke="#8A5030" stroke-width="1" fill="none" stroke-linecap="round" opacity="0.5"/>
               </g>
 
+              <!-- Eye white right -->
               <g id="eye-right">
                 <ellipse cx="192" cy="145" rx="22" ry="16" fill="#F8F4EF"/>
+                <!-- Iris right -->
                 <ellipse cx="192" cy="145" rx="13" ry="13" fill="#5A3010"/>
+                <!-- Pupil right -->
                 <ellipse cx="192" cy="145" rx="8" ry="8" fill="#1A0A04"/>
+                <!-- Eye gloss right -->
                 <ellipse cx="186" cy="140" rx="5" ry="4" fill="url(#eyeGloss)"/>
                 <circle cx="197" cy="148" r="1.5" fill="white" opacity="0.6"/>
+                <!-- Upper eyelid -->
                 <path d="M 170 140 Q 192 130 214 140" stroke="#6A3C1A" stroke-width="2" fill="none" stroke-linecap="round"/>
                 <path d="M 172 152 Q 192 158 212 152" stroke="#8A5030" stroke-width="1" fill="none" stroke-linecap="round" opacity="0.5"/>
               </g>
 
+              <!-- NOSE -->
               <path d="M 160 160 L 148 188 Q 154 194 160 195 Q 166 194 172 188 Z" fill="#C87848" opacity="0.35"/>
               <ellipse cx="152" cy="190" rx="8" ry="6" fill="#C07040" opacity="0.5"/>
               <ellipse cx="168" cy="190" rx="8" ry="6" fill="#C07040" opacity="0.5"/>
+              <!-- Nose bridge -->
               <path d="M 160 148 Q 156 170 150 186" stroke="#C07040" stroke-width="1.5" fill="none" opacity="0.3" stroke-linecap="round"/>
 
+              <!-- CHEEK BLUSH -->
               <ellipse cx="96" cy="182" rx="30" ry="20" fill="url(#blushL)"/>
               <ellipse cx="224" cy="182" rx="30" ry="20" fill="url(#blushR)"/>
 
+              <!-- PHILTRUM -->
               <path d="M 156 196 Q 160 200 164 196" stroke="#B06030" stroke-width="1" fill="none" opacity="0.4"/>
 
+              <!-- LIPS -->
               <g id="mouth-group">
+                <!-- Upper lip -->
                 <path d="M 125 205 Q 135 200 148 202 Q 160 198 172 202 Q 185 200 195 205
                           Q 178 210 160 209 Q 142 210 125 205 Z" fill="#C86858"/>
+                <!-- Lower lip -->
                 <path d="M 125 205 Q 142 218 160 220 Q 178 218 195 205 Q 178 210 160 209 Q 142 210 125 205 Z" fill="#D47870"/>
+                <!-- Lip highlight -->
                 <ellipse cx="160" cy="215" rx="18" ry="4" fill="#E89888" opacity="0.5"/>
+                <!-- Mouth line -->
                 <path id="mouth-path" d="M 125 205 Q 162 213 195 205" stroke="#A05040" stroke-width="1.5" fill="none" stroke-linecap="round"/>
               </g>
 
+              <!-- CHIN DEFINITION -->
               <path d="M 140 255 Q 160 265 180 255" stroke="#C4784A" stroke-width="1.5" fill="none" opacity="0.3"/>
+
+              <!-- BINDI (forehead dot) - traditional touch -->
               <circle cx="160" cy="98" r="5" fill="#CC2222" opacity="0.85"/>
               <circle cx="160" cy="98" r="3" fill="#FF4444" opacity="0.6"/>
+
             </g>
           </svg>
         </div>
+        <!-- Status -->
         <div class="orb-status">
           <div class="status-indicator"></div>
           <span class="status-text" id="statusText">Ready to help</span>
@@ -829,6 +917,7 @@
       </div>
     </div>
 
+    <!-- CENTER: CONVERSATION -->
     <div class="convo-panel">
       <div class="panel-card" style="flex:1">
         <div class="panel-header">
@@ -840,7 +929,9 @@
             ✦ AI Assist active
           </div>
         </div>
-        <div class="convo-feed" id="convoFeed"></div>
+        <div class="convo-feed" id="convoFeed">
+          <!-- Messages injected here -->
+        </div>
         <div style="padding: 0 20px;">
           <div class="typing-indicator" id="typingIndicator">
             <span></span><span></span><span></span>
@@ -872,6 +963,7 @@
       </div>
     </div>
 
+    <!-- RIGHT: TRAINING -->
     <div class="training-panel">
       <div class="panel-card">
         <div class="tab-bar">
@@ -880,6 +972,7 @@
           <button class="tab-btn" onclick="switchTab('suggestions',this)">Suggestions</button>
         </div>
 
+        <!-- Train Tab -->
         <div id="tab-train">
           <div class="train-form">
             <div class="field-group">
@@ -895,7 +988,7 @@
               <select class="train-input" id="trainLang" style="height:38px">
                 <option value="or">Odia (ଓଡ଼ିଆ)</option>
                 <option value="hi">Hindi (हिन्दी)</option>
-                <option value="en" selected>English</option>
+                <option value="en">English</option>
               </select>
             </div>
             <div style="display:flex; gap:8px;">
@@ -910,21 +1003,29 @@
           </div>
         </div>
 
+        <!-- KB Tab -->
         <div id="tab-kb" style="display:none">
-          <div class="trained-list" id="kbList"></div>
+          <div class="trained-list" id="kbList">
+            <!-- KB entries -->
+          </div>
           <div class="kb-row">
             <span>Total entries: <span class="kb-count" id="kbCountLabel">0</span></span>
+            <span style="cursor:pointer;color:var(--danger);font-size:11px" onclick="clearKB()">Clear All</span>
           </div>
         </div>
 
+        <!-- Suggestions Tab -->
         <div id="tab-suggestions" style="display:none">
-          <div class="suggestions-list" id="suggestionsList"></div>
+          <div class="suggestions-list" id="suggestionsList">
+            <!-- unanswered queries -->
+          </div>
           <div class="kb-row">
             <span style="font-size:11px">Unanswered queries logged for training</span>
           </div>
         </div>
       </div>
 
+      <!-- Business info card -->
       <div class="panel-card">
         <div class="panel-header">
           <div class="panel-title"><span class="panel-icon">🏢</span> Business Profile</div>
@@ -952,8 +1053,10 @@
         </div>
       </div>
     </div>
-  </div>
 
+  </div><!-- /main-content -->
+
+  <!-- FOOTER -->
   <footer>
     <div class="footer-brand">
       <span>SwagatAI v1.0</span>
@@ -965,25 +1068,27 @@
       <span>Python Backend · Lightweight AI · No high-speed internet needed</span>
     </div>
   </footer>
-</div>
+
+</div><!-- /app-shell -->
 
 <script>
-let lang = 'en';
-let mode = 'visitor';
+// ─── STATE ───────────────────────────────────────────
+let lang = 'or';
+let mode = 'visitor'; // 'visitor' | 'owner'
 let isSpeaking = false;
 let queryCount = 0;
 let accurateCount = 0;
-let knowledgeBase = [];
-let unanswered = [];
+let knowledgeBase = []; // {q, a, lang}
+let unanswered = []; // suggested training items
 let currentTab = 'train';
-let trainRecognition = null;
-let recognition = null;
 
 const labels = {
   or: {
     greeting: "ନମସ୍କାର! ମୁଁ ସ୍ୱଗତ। ଆପଣଙ୍କୁ କିପରି ସାହାଯ୍ୟ କରିପାରିବି?",
     placeholder: "ଆପଣଙ୍କ ପ୍ରଶ୍ନ ଟାଇପ୍ କରନ୍ତୁ...",
     askBtn: "ପଚାର ↗",
+    thinking: "ଭାବୁଛି...",
+    notFound: "ମୁଁ ଏହା ଶିଖି ନାହିଁ। ମୋ AI ସହାୟକ ଉତ୍ତର ଦେଉଛି।",
     listening: "ଶୁଣୁଛି...",
     tagline: "ଆପଣଙ୍କ AI ଗ୍ରାହକ ସେବା ସହାୟକ",
   },
@@ -991,6 +1096,8 @@ const labels = {
     greeting: "नमस्कार! मैं स्वागता हूँ। मैं आपकी कैसे मदद कर सकती हूँ?",
     placeholder: "अपना प्रश्न टाइप करें...",
     askBtn: "पूछें ↗",
+    thinking: "सोच रही हूँ...",
+    notFound: "यह मुझे नहीं पता। AI सहायक से उत्तर ले रही हूँ।",
     listening: "सुन रही हूँ...",
     tagline: "आपकी AI रिसेप्शन सहायक",
   },
@@ -998,31 +1105,40 @@ const labels = {
     greeting: "Namaskara! I'm Swagata, your AI reception assistant. How may I help you today?",
     placeholder: "Type or speak your question...",
     askBtn: "Ask ↗",
+    thinking: "Thinking...",
+    notFound: "I don't have that information yet. Let me fetch an answer using AI.",
     listening: "Listening...",
     tagline: "Your AI Reception Assistant",
   }
 };
 
-window.onload = async () => {
-  await fetchKB();
+// ─── SAMPLE KB DATA ───────────────────────────────────
+const sampleKB = [
+  {q: "What are the museum timings?", a: "The museum is open Tuesday to Sunday, 10 AM to 5 PM. Closed on Mondays and national holidays.", lang: "en"},
+  {q: "ଟିକେଟ୍ ମୂଲ୍ୟ କେତେ?", a: "ଭାରତୀୟ ଦର୍ଶକଙ୍କ ପାଇଁ ୨୦ ଟଙ୍କା ଏବଂ ବିଦେଶୀ ଦର୍ଶକଙ୍କ ପାଇଁ ୨୦୦ ଟଙ୍କା।", lang: "or"},
+  {q: "पार्किंग की सुविधा है क्या?", a: "हाँ, म्यूज़ियम के पास निःशुल्क पार्किंग उपलब्ध है।", lang: "hi"},
+];
+knowledgeBase = [...sampleKB];
+
+const sampleUnanswered = [
+  "Is photography allowed inside?",
+  "ଗ୍ୟାଲେରୀ ନଂ ୩ କୁ କିପରି ଯିବ?",
+  "क्या यहाँ कैफेटेरिया है?",
+];
+unanswered = [...sampleUnanswered];
+
+// ─── INIT ──────────────────────────────────────────────
+window.onload = () => {
+  renderKB();
+  renderSuggestions();
   updateStats();
-  
   setTimeout(() => {
     addMessage('ai', labels[lang].greeting, 'Swagata');
     triggerSpeak(labels[lang].greeting);
   }, 800);
 };
 
-async function fetchKB() {
-  try {
-    const res = await fetch('/api/kb');
-    knowledgeBase = await res.json();
-    renderKB();
-  } catch (err) {
-    console.error("Failed to load DB:", err);
-  }
-}
-
+// ─── LANGUAGE SWITCH ──────────────────────────────────
 function setLang(l) {
   lang = l;
   document.querySelectorAll('.lang-btn').forEach(b => b.classList.remove('active'));
@@ -1042,12 +1158,14 @@ function updateHints(l) {
   c.innerHTML = hints[l].map(h => `<div class="hint-chip" onclick="useHint(this)">${h}</div>`).join('');
 }
 
+// ─── MODE TOGGLE ──────────────────────────────────────
 function toggleMode() {
   mode = mode === 'visitor' ? 'owner' : 'visitor';
   document.getElementById('modeLabel').textContent = mode === 'visitor' ? 'Visitor Mode' : 'Owner Mode';
   showToast(mode === 'owner' ? 'Owner / Training Mode Active' : 'Visitor Mode Active', 'info');
 }
 
+// ─── MESSAGING ───────────────────────────────────────
 function addMessage(role, text, name) {
   const feed = document.getElementById('convoFeed');
   const now = new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
@@ -1067,148 +1185,119 @@ function showTyping(show) {
   document.getElementById('typingIndicator').style.display = show ? 'flex' : 'none';
 }
 
-async function sendVisitorQuery() {
+// ─── QUERY HANDLER ───────────────────────────────────
+function sendVisitorQuery() {
   const input = document.getElementById('visitorInput');
   const q = input.value.trim();
   if (!q) return;
-  
   input.value = '';
   addMessage('visitor', q, 'Visitor');
   queryCount++;
   updateStats();
   showTyping(true);
 
-  try {
-    const res = await fetch('/api/ask', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ query: q, language: lang })
-    });
-    const data = await res.json();
-    
+  setTimeout(() => {
     showTyping(false);
-    addMessage('ai', data.answer, data.source === 'knowledge_base' ? 'Swagata' : 'Swagata · AI Assist');
-    
-    if (data.source === 'ai_fallback') {
+    const answer = lookupKB(q);
+    if (answer) {
+      addMessage('ai', answer, 'Swagata');
+      document.getElementById('fallbackBadge').style.display = 'none';
+      accurateCount++;
+      triggerSpeak(answer);
+    } else {
+      // Fallback to AI
       document.getElementById('fallbackBadge').style.display = 'flex';
+      const fallbackReply = getFallbackAnswer(q);
+      addMessage('ai', fallbackReply, 'Swagata · AI Assist');
       if (!unanswered.includes(q)) {
         unanswered.unshift(q);
         renderSuggestions();
+        showToast('New training suggestion logged!', 'info');
       }
-    } else {
-      document.getElementById('fallbackBadge').style.display = 'none';
-      accurateCount++;
+      triggerSpeak(fallbackReply);
     }
-    
-    triggerSpeak(data.answer);
     updateStats();
-
-  } catch (err) {
-    showTyping(false);
-    addMessage('ai', "Server error. Please check backend connection.", 'System');
-  }
+  }, 1200 + Math.random() * 600);
 }
 
-async function trainEntry() {
+function lookupKB(query) {
+  const qLow = query.toLowerCase().replace(/[?।]/g, '');
+  for (const entry of knowledgeBase) {
+    const entryQ = entry.q.toLowerCase().replace(/[?।]/g, '');
+    const words = qLow.split(' ').filter(w => w.length > 2);
+    const matches = words.filter(w => entryQ.includes(w)).length;
+    if (matches >= 2 || entryQ.includes(qLow) || qLow.includes(entryQ.substring(0,8))) {
+      return entry.a;
+    }
+  }
+  return null;
+}
+
+function getFallbackAnswer(q) {
+  const q2 = q.toLowerCase();
+  const responses = {
+    en: [
+      "Based on general information, I'd recommend contacting our staff directly for this. Our office number is displayed at the entrance.",
+      "That's a great question! I'm still learning. Our team will be happy to assist you with this query.",
+      "I don't have specific details on that yet, but our information desk can help you with this right away.",
+    ],
+    hi: [
+      "इस बारे में मुझे पूरी जानकारी नहीं है। कृपया हमारे स्टाफ से संपर्क करें।",
+      "यह एक अच्छा प्रश्न है! मैं अभी भी सीख रही हूँ। कृपया रिसेप्शन पर जाएं।",
+    ],
+    or: [
+      "ଏ ବିଷୟରେ ମୋ ପାଖରେ ସୂଚନା ନାହିଁ। ଆମ ସ୍ଟାଫଙ୍କ ସହ ଯୋଗାଯୋଗ କରନ୍ତୁ।",
+      "ଏହି ପ୍ରଶ୍ନ ପାଇଁ ଆମ ରିସେପ୍ସନ ଡେସ୍କ ଆପଣଙ୍କୁ ସାହାଯ୍ୟ କରିବ।",
+    ]
+  };
+  const pool = responses[lang] || responses['en'];
+  return pool[Math.floor(Math.random() * pool.length)];
+}
+
+// ─── TRAINING ────────────────────────────────────────
+function trainEntry() {
   const q = document.getElementById('trainQ').value.trim();
   const a = document.getElementById('trainA').value.trim();
   const l = document.getElementById('trainLang').value;
   if (!q || !a) { showToast('Please fill both question and answer.', 'info'); return; }
-
-  try {
-    const res = await fetch('/api/kb', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ question: q, answer: a, language: l })
-    });
-    
-    if (res.ok) {
-      document.getElementById('trainQ').value = '';
-      document.getElementById('trainA').value = '';
-      await fetchKB(); 
-      updateStats();
-      showToast('✓ Added to Knowledge Base!', 'success');
-    }
-  } catch (err) {
-    showToast('Failed to save to database', 'danger');
-  }
+  knowledgeBase.unshift({q, a, lang: l});
+  document.getElementById('trainQ').value = '';
+  document.getElementById('trainA').value = '';
+  renderKB();
+  updateStats();
+  showToast('✓ Added to Knowledge Base!', 'success');
 }
 
 function trainByVoice() {
-  const btn = document.querySelector('.train-form .btn-voice');
-  
-  if (btn.classList.contains('listening')) {
-    stopTrainListen(btn);
-    return;
-  }
-
-  const selectedLang = document.getElementById('trainLang').value;
-  btn.classList.add('listening');
-  showToast('Listening... Speak the answer now.', 'info');
-
-  if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
-    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-    trainRecognition = new SR();
-    
-    trainRecognition.lang = selectedLang === 'or' ? 'or-IN' : selectedLang === 'hi' ? 'hi-IN' : 'en-IN';
-    trainRecognition.interimResults = false;
-    
-    trainRecognition.onresult = (e) => {
-      const transcript = e.results[0][0].transcript;
-      document.getElementById('trainA').value = transcript;
-      stopTrainListen(btn);
-      showToast('Voice captured!', 'success');
-    };
-    
-    trainRecognition.onerror = () => {
-      showToast('Didn\'t catch that. Try again.', 'info');
-      stopTrainListen(btn);
-    };
-    
-    trainRecognition.onend = () => { 
-      stopTrainListen(btn); 
-    };
-    
-    trainRecognition.start();
-  } else {
-    showToast('Speech recognition not supported in your browser.', 'info');
-    stopTrainListen(btn);
-  }
+  showToast('Voice training: speak the answer after the beep.', 'info');
 }
 
-function stopTrainListen(btn) {
-  if (trainRecognition) { 
-    try { trainRecognition.stop(); } catch(e){} 
-    trainRecognition = null; 
-  }
-  if (btn) btn.classList.remove('listening');
+function clearKB() {
+  if (!confirm('Clear all knowledge base entries?')) return;
+  knowledgeBase = [];
+  renderKB();
+  updateStats();
 }
 
+// ─── RENDER KB ───────────────────────────────────────
 function renderKB() {
   const list = document.getElementById('kbList');
   if (knowledgeBase.length === 0) {
     list.innerHTML = '<div style="color:var(--muted);font-size:12px;padding:8px">No entries yet. Add some above!</div>';
   } else {
-    list.innerHTML = knowledgeBase.map(e => `
+    list.innerHTML = knowledgeBase.map((e,i) => `
       <div class="trained-item" title="${e.a}">
         <span style="flex:1"><strong style="color:#E0EAF8">${e.q}</strong><br><span style="color:var(--muted);font-size:11px">${e.lang.toUpperCase()} · ${e.a.substring(0,50)}${e.a.length>50?'…':''}</span></span>
-        <span onclick="removeKB(${e.id})" style="cursor:pointer;color:var(--muted);font-size:14px;flex-shrink:0">✕</span>
+        <span onclick="removeKB(${i})" style="cursor:pointer;color:var(--muted);font-size:14px;flex-shrink:0">✕</span>
       </div>`).join('');
   }
   document.getElementById('kbCountLabel').textContent = knowledgeBase.length;
 }
 
-async function removeKB(id) {
-  try {
-    const res = await fetch(`/api/kb/${id}`, { method: 'DELETE' });
-    if (res.ok) {
-      await fetchKB();
-      updateStats();
-      showToast('Entry removed.', 'info');
-    }
-  } catch (e) {
-    console.error(e);
-  }
+function removeKB(i) {
+  knowledgeBase.splice(i, 1);
+  renderKB();
+  updateStats();
 }
 
 function renderSuggestions() {
@@ -1217,7 +1306,7 @@ function renderSuggestions() {
     list.innerHTML = '<div style="color:var(--muted);font-size:12px;padding:8px">No unanswered queries yet.</div>';
     return;
   }
-  list.innerHTML = unanswered.map(q => `
+  list.innerHTML = unanswered.map((q,i) => `
     <div class="suggestion-item" onclick="useSuggestion('${q.replace(/'/g,"\\'")}')">
       <span class="suggestion-q">${q}</span>
       <span class="suggestion-badge">Train →</span>
@@ -1231,6 +1320,7 @@ function useSuggestion(q) {
   showToast('Fill in the answer to train Swagata!', 'info');
 }
 
+// ─── TABS ────────────────────────────────────────────
 function switchTab(tab, btn) {
   currentTab = tab;
   ['train','kb','suggestions'].forEach(t => {
@@ -1241,6 +1331,7 @@ function switchTab(tab, btn) {
   else document.querySelectorAll('.tab-btn')[['train','kb','suggestions'].indexOf(tab)].classList.add('active');
 }
 
+// ─── SPEAKING ANIMATION ──────────────────────────────
 function triggerSpeak(text) {
   const shell = document.getElementById('appShell');
   const face = document.getElementById('face');
@@ -1250,6 +1341,7 @@ function triggerSpeak(text) {
 
   const duration = Math.max(1500, text.length * 55);
   
+  // Web Speech API (if available)
   if ('speechSynthesis' in window) {
     const utter = new SpeechSynthesisUtterance(text);
     utter.lang = lang === 'or' ? 'or-IN' : lang === 'hi' ? 'hi-IN' : 'en-IN';
@@ -1269,6 +1361,9 @@ function stopSpeaking() {
   face.classList.remove('speaking');
   document.getElementById('statusText').textContent = labels[lang]?.greeting?.substring(0,14) + '...' || 'Ready to help';
 }
+
+// ─── VOICE INPUT ─────────────────────────────────────
+let recognition = null;
 
 function toggleListen() {
   const overlay = document.getElementById('listenOverlay');
@@ -1292,9 +1387,11 @@ function toggleListen() {
     recognition.onend = stopListening;
     recognition.start();
   } else {
+    // Simulate for demo
     setTimeout(() => {
-      document.getElementById('visitorInput').value = "Please test in Chrome or Edge for voice recognition.";
+      document.getElementById('visitorInput').value = lang === 'or' ? "ଟିକେଟ୍ ଦର କେତେ?" : lang === 'hi' ? "टिकट का दाम क्या है?" : "What are the ticket prices?";
       stopListening();
+      setTimeout(() => sendVisitorQuery(), 300);
     }, 2000);
   }
 }
@@ -1305,11 +1402,13 @@ function stopListening() {
   document.getElementById('voiceBtn').classList.remove('listening');
 }
 
+// ─── HINTS ───────────────────────────────────────────
 function useHint(el) {
   document.getElementById('visitorInput').value = el.textContent;
   document.getElementById('visitorInput').focus();
 }
 
+// ─── STATS ───────────────────────────────────────────
 function updateStats() {
   document.getElementById('statQueries').textContent = queryCount;
   document.getElementById('statKB').textContent = knowledgeBase.length;
@@ -1317,11 +1416,13 @@ function updateStats() {
   document.getElementById('statAcc').textContent = acc;
 }
 
+// ─── PROFILE ─────────────────────────────────────────
 function saveProfile() {
   const name = document.getElementById('bizName').value;
   showToast(`Profile saved: ${name}`, 'success');
 }
 
+// ─── TOAST ───────────────────────────────────────────
 function showToast(msg, type='info') {
   const c = document.getElementById('toastContainer');
   const t = document.createElement('div');
@@ -1331,6 +1432,7 @@ function showToast(msg, type='info') {
   setTimeout(() => { t.style.opacity = '0'; t.style.transform = 'translateX(20px)'; t.style.transition = 'all 0.3s'; setTimeout(() => t.remove(), 300); }, 3000);
 }
 
+// ─── KEYBOARD SHORTCUT ───────────────────────────────
 document.addEventListener('keydown', e => {
   if (e.key === 'Escape') stopListening();
   if ((e.ctrlKey || e.metaKey) && e.key === 'm') { e.preventDefault(); toggleListen(); }
