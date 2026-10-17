@@ -6,7 +6,6 @@
 <title>SwagatAI — Smart Reception Assistant</title>
 <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@400;600;700;800&family=Noto+Sans+Odia:wght@400;600&family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;1,400&display=swap" rel="stylesheet"/>
 <style>
-  /* [All CSS remains exactly as you originally designed it] */
   :root {
     --saffron: #FF6B00;
     --saffron-light: #FF8C3A;
@@ -151,15 +150,12 @@
     align-items: start;
   }
 
-<<<<<<< HEAD
-=======
   .app-shell.visitor-mode .main-content {
     grid-template-columns: 340px minmax(300px, 800px);
     justify-content: center;
   }
   .app-shell.visitor-mode .training-panel { display: none; }
 
->>>>>>> 7fb4ba510767b55c2b2e54b33566cc8c073b54e2
   .avatar-panel {
     display: flex; flex-direction: column; align-items: center; gap: 20px;
   }
@@ -277,13 +273,7 @@
   }
   .avatar-tagline { text-align: center; font-size: 13px; color: var(--muted); letter-spacing: 0.3px; }
 
-<<<<<<< HEAD
-  .stats-row {
-    display: flex; gap: 12px; width: 100%;
-  }
-=======
   .stats-row { display: flex; gap: 12px; width: 100%; }
->>>>>>> 7fb4ba510767b55c2b2e54b33566cc8c073b54e2
   .stat-card {
     flex: 1;
     background: var(--night2);
@@ -293,13 +283,7 @@
   .stat-card .val { font-size: 20px; font-weight: 700; font-family: 'Baloo 2', sans-serif; color: var(--teal-glow); }
   .stat-card .lbl { font-size: 10px; color: var(--muted); margin-top: 2px; text-transform: uppercase; letter-spacing: 0.5px; }
 
-<<<<<<< HEAD
-  .convo-panel {
-    display: flex; flex-direction: column; gap: 16px;
-  }
-=======
   .convo-panel { display: flex; flex-direction: column; gap: 16px; }
->>>>>>> 7fb4ba510767b55c2b2e54b33566cc8c073b54e2
 
   .panel-card {
     background: var(--night2);
@@ -357,8 +341,6 @@
   .msg-meta { font-size: 10px; color: var(--muted); margin-top: 4px; }
   .visitor .msg-meta { text-align: right; }
 
-<<<<<<< HEAD
-=======
   /* Matched question reference */
   .matched-ref {
     margin-top: 7px;
@@ -382,7 +364,6 @@
   .confidence-mid  { background: rgba(240,165,0,0.15);  color: var(--gold);  border: 1px solid rgba(240,165,0,0.25); }
   .confidence-low  { background: rgba(232,64,64,0.12);  color: #FF8080;       border: 1px solid rgba(232,64,64,0.2); }
 
->>>>>>> 7fb4ba510767b55c2b2e54b33566cc8c073b54e2
   .typing-indicator {
     display: none; align-items: center; gap: 5px; padding: 10px 14px;
     background: rgba(0,168,150,0.08); border: 1px solid rgba(0,212,187,0.1);
@@ -458,10 +439,6 @@
     cursor: default;
   }
 
-<<<<<<< HEAD
-  .training-panel {
-    display: flex; flex-direction: column; gap: 14px;
-=======
   /* AI model pill shown inside AI messages */
   .ai-model-pill {
     display: inline-flex; align-items: center; gap: 4px;
@@ -469,7 +446,6 @@
     border-radius: 10px; margin-top: 5px;
     background: rgba(240,165,0,0.1); border: 1px solid rgba(240,165,0,0.2);
     color: var(--gold); letter-spacing: 0.3px;
->>>>>>> 7fb4ba510767b55c2b2e54b33566cc8c073b54e2
   }
 
   /* Typing indicator label */
@@ -557,8 +533,6 @@
   }
   .trained-item::before { content: '✓'; color: var(--teal-glow); flex-shrink: 0; font-size: 11px; margin-top: 1px; }
 
-<<<<<<< HEAD
-=======
   /* ── KB Edit Modal ── */
   .edit-modal-overlay {
     display: none; position: fixed; inset: 0; z-index: 300;
@@ -640,7 +614,6 @@
   .btn-save-edit:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(0,168,150,0.4); }
   .btn-save-edit:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
 
->>>>>>> 7fb4ba510767b55c2b2e54b33566cc8c073b54e2
   footer {
     text-align: center; padding: 14px 36px;
     border-top: 1px solid rgba(255,255,255,0.04);
@@ -718,11 +691,7 @@
   }
   .toast.success { background: rgba(46,204,113,0.15); border: 1px solid rgba(46,204,113,0.3); color: #7FFFC4; }
   .toast.info { background: rgba(0,168,150,0.15); border: 1px solid rgba(0,212,187,0.3); color: var(--teal-glow); }
-<<<<<<< HEAD
-  .toast.danger { background: rgba(232,64,64,0.15); border: 1px solid rgba(232,64,64,0.3); color: #FF7070; }
-=======
   .toast.danger { background: rgba(232,64,64,0.15); border: 1px solid rgba(232,64,64,0.3); color: #FF9090; }
->>>>>>> 7fb4ba510767b55c2b2e54b33566cc8c073b54e2
 
   .tab-bar {
     display: flex; padding: 12px 16px 0; gap: 4px;
@@ -744,6 +713,7 @@
 <div class="bg-layer"></div>
 <div class="bg-grid"></div>
 
+<!-- Listening overlay -->
 <div class="listen-overlay" id="listenOverlay">
   <div class="listen-ripple">🎤</div>
   <div class="listen-text" id="listenLang">Listening...</div>
@@ -757,12 +727,8 @@
 
 <div class="toast-container" id="toastContainer"></div>
 
-<<<<<<< HEAD
-<div class="app-shell" id="appShell">
-=======
 <div class="app-shell visitor-mode" id="appShell">
 
->>>>>>> 7fb4ba510767b55c2b2e54b33566cc8c073b54e2
   <header>
     <div class="logo-group">
       <div class="logo-icon">ସ୍ୱ</div>
@@ -785,6 +751,8 @@
   </header>
 
   <div class="main-content">
+
+    <!-- LEFT: AVATAR -->
     <div class="avatar-panel">
       <div class="orb-container">
         <div class="orb-ring"></div>
@@ -827,50 +795,24 @@
               <path d="M 130 288 L 160 310 L 190 288 L 160 295 Z" fill="#0D2A45"/>
               <path d="M 80 330 Q 110 310 130 300" stroke="#2A5080" stroke-width="1.5" fill="none" opacity="0.6"/>
               <path d="M 240 330 Q 210 310 190 300" stroke="#2A5080" stroke-width="1.5" fill="none" opacity="0.6"/>
-<<<<<<< HEAD
-
               <ellipse cx="160" cy="158" rx="130" ry="148" fill="url(#skinGrad)"/>
-
-=======
-              <ellipse cx="160" cy="158" rx="130" ry="148" fill="url(#skinGrad)"/>
->>>>>>> 7fb4ba510767b55c2b2e54b33566cc8c073b54e2
               <g clip-path="url(#faceClip)">
                 <ellipse cx="48" cy="160" rx="55" ry="120" fill="#C4784A" opacity="0.3"/>
                 <ellipse cx="272" cy="160" rx="55" ry="120" fill="#C4784A" opacity="0.3"/>
                 <ellipse cx="160" cy="80" rx="70" ry="55" fill="#FAE0C0" opacity="0.35"/>
               </g>
-<<<<<<< HEAD
-
-              <ellipse cx="160" cy="60" rx="128" ry="75" fill="url(#hairGrad)"/>
-              <path d="M 40 80 Q 45 20 100 10 Q 130 4 160 4 Q 190 4 220 10 Q 275 20 280 80
-                        Q 260 50 220 42 Q 190 36 160 36 Q 130 36 100 42 Q 60 50 40 80 Z" fill="#1A0E08"/>
-              <path d="M 80 36 Q 120 28 160 30" stroke="#2A1A0C" stroke-width="3" fill="none" opacity="0.5"/>
-              <path d="M 100 12 Q 130 8 155 10" stroke="#4A2810" stroke-width="2.5" fill="none" opacity="0.8" stroke-linecap="round"/>
-
-=======
               <ellipse cx="160" cy="60" rx="128" ry="75" fill="url(#hairGrad)"/>
               <path d="M 40 80 Q 45 20 100 10 Q 130 4 160 4 Q 190 4 220 10 Q 275 20 280 80 Q 260 50 220 42 Q 190 36 160 36 Q 130 36 100 42 Q 60 50 40 80 Z" fill="#1A0E08"/>
               <path d="M 80 36 Q 120 28 160 30" stroke="#2A1A0C" stroke-width="3" fill="none" opacity="0.5"/>
               <path d="M 100 12 Q 130 8 155 10" stroke="#4A2810" stroke-width="2.5" fill="none" opacity="0.8" stroke-linecap="round"/>
->>>>>>> 7fb4ba510767b55c2b2e54b33566cc8c073b54e2
               <ellipse cx="33" cy="165" rx="14" ry="20" fill="#D4895A"/>
               <ellipse cx="35" cy="165" rx="9" ry="14" fill="#C4784A" opacity="0.6"/>
               <ellipse cx="287" cy="165" rx="14" ry="20" fill="#D4895A"/>
               <ellipse cx="285" cy="165" rx="9" ry="14" fill="#C4784A" opacity="0.6"/>
-<<<<<<< HEAD
-
-              <path id="brow-left" d="M 105 118 Q 125 110 148 112" stroke="#2C1810" stroke-width="4" fill="none" stroke-linecap="round"/>
-              <path id="brow-right" d="M 172 112 Q 195 110 215 118" stroke="#2C1810" stroke-width="4" fill="none" stroke-linecap="round"/>
-
-              <ellipse cx="130" cy="148" rx="26" ry="20" fill="#C4784A" opacity="0.2"/>
-              <ellipse cx="192" cy="148" rx="26" ry="20" fill="#C4784A" opacity="0.2"/>
-
-=======
               <path id="brow-left" d="M 105 118 Q 125 110 148 112" stroke="#2C1810" stroke-width="4" fill="none" stroke-linecap="round"/>
               <path id="brow-right" d="M 172 112 Q 195 110 215 118" stroke="#2C1810" stroke-width="4" fill="none" stroke-linecap="round"/>
               <ellipse cx="130" cy="148" rx="26" ry="20" fill="#C4784A" opacity="0.2"/>
               <ellipse cx="192" cy="148" rx="26" ry="20" fill="#C4784A" opacity="0.2"/>
->>>>>>> 7fb4ba510767b55c2b2e54b33566cc8c073b54e2
               <g id="eye-left">
                 <ellipse cx="130" cy="145" rx="22" ry="16" fill="#F8F4EF"/>
                 <ellipse cx="130" cy="145" rx="13" ry="13" fill="#5A3010"/>
@@ -880,10 +822,6 @@
                 <path d="M 108 140 Q 130 130 152 140" stroke="#6A3C1A" stroke-width="2" fill="none" stroke-linecap="round"/>
                 <path d="M 110 152 Q 130 158 150 152" stroke="#8A5030" stroke-width="1" fill="none" stroke-linecap="round" opacity="0.5"/>
               </g>
-<<<<<<< HEAD
-
-=======
->>>>>>> 7fb4ba510767b55c2b2e54b33566cc8c073b54e2
               <g id="eye-right">
                 <ellipse cx="192" cy="145" rx="22" ry="16" fill="#F8F4EF"/>
                 <ellipse cx="192" cy="145" rx="13" ry="13" fill="#5A3010"/>
@@ -893,39 +831,19 @@
                 <path d="M 170 140 Q 192 130 214 140" stroke="#6A3C1A" stroke-width="2" fill="none" stroke-linecap="round"/>
                 <path d="M 172 152 Q 192 158 212 152" stroke="#8A5030" stroke-width="1" fill="none" stroke-linecap="round" opacity="0.5"/>
               </g>
-<<<<<<< HEAD
-
-=======
->>>>>>> 7fb4ba510767b55c2b2e54b33566cc8c073b54e2
               <path d="M 160 160 L 148 188 Q 154 194 160 195 Q 166 194 172 188 Z" fill="#C87848" opacity="0.35"/>
               <ellipse cx="152" cy="190" rx="8" ry="6" fill="#C07040" opacity="0.5"/>
               <ellipse cx="168" cy="190" rx="8" ry="6" fill="#C07040" opacity="0.5"/>
               <path d="M 160 148 Q 156 170 150 186" stroke="#C07040" stroke-width="1.5" fill="none" opacity="0.3" stroke-linecap="round"/>
-<<<<<<< HEAD
-
-              <ellipse cx="96" cy="182" rx="30" ry="20" fill="url(#blushL)"/>
-              <ellipse cx="224" cy="182" rx="30" ry="20" fill="url(#blushR)"/>
-
-              <path d="M 156 196 Q 160 200 164 196" stroke="#B06030" stroke-width="1" fill="none" opacity="0.4"/>
-
-              <g id="mouth-group">
-                <path d="M 125 205 Q 135 200 148 202 Q 160 198 172 202 Q 185 200 195 205
-                          Q 178 210 160 209 Q 142 210 125 205 Z" fill="#C86858"/>
-=======
               <ellipse cx="96" cy="182" rx="30" ry="20" fill="url(#blushL)"/>
               <ellipse cx="224" cy="182" rx="30" ry="20" fill="url(#blushR)"/>
               <path d="M 156 196 Q 160 200 164 196" stroke="#B06030" stroke-width="1" fill="none" opacity="0.4"/>
               <g id="mouth-group">
                 <path d="M 125 205 Q 135 200 148 202 Q 160 198 172 202 Q 185 200 195 205 Q 178 210 160 209 Q 142 210 125 205 Z" fill="#C86858"/>
->>>>>>> 7fb4ba510767b55c2b2e54b33566cc8c073b54e2
                 <path d="M 125 205 Q 142 218 160 220 Q 178 218 195 205 Q 178 210 160 209 Q 142 210 125 205 Z" fill="#D47870"/>
                 <ellipse cx="160" cy="215" rx="18" ry="4" fill="#E89888" opacity="0.5"/>
                 <path id="mouth-path" d="M 125 205 Q 162 213 195 205" stroke="#A05040" stroke-width="1.5" fill="none" stroke-linecap="round"/>
               </g>
-<<<<<<< HEAD
-
-=======
->>>>>>> 7fb4ba510767b55c2b2e54b33566cc8c073b54e2
               <path d="M 140 255 Q 160 265 180 255" stroke="#C4784A" stroke-width="1.5" fill="none" opacity="0.3"/>
               <circle cx="160" cy="98" r="5" fill="#CC2222" opacity="0.85"/>
               <circle cx="160" cy="98" r="3" fill="#FF4444" opacity="0.6"/>
@@ -960,6 +878,7 @@
       </div>
     </div>
 
+    <!-- CENTER: CONVERSATION -->
     <div class="convo-panel">
       <div class="panel-card" style="flex:1">
         <div class="panel-header">
@@ -1007,6 +926,7 @@
       </div>
     </div>
 
+    <!-- RIGHT: TRAINING -->
     <div class="training-panel">
       <div class="panel-card">
         <div class="tab-bar">
@@ -1030,7 +950,7 @@
               <select class="train-input" id="trainLang" style="height:38px">
                 <option value="or">Odia (ଓଡ଼ିଆ)</option>
                 <option value="hi">Hindi (हिन्दी)</option>
-                <option value="en" selected>English</option>
+                <option value="en">English</option>
               </select>
             </div>
             <div style="display:flex; gap:8px;">
@@ -1049,6 +969,7 @@
           <div class="trained-list" id="kbList"></div>
           <div class="kb-row">
             <span>Total entries: <span class="kb-count" id="kbCountLabel">0</span></span>
+            <span style="cursor:pointer;color:var(--danger);font-size:11px" onclick="clearKB()">Clear All</span>
           </div>
         </div>
 
@@ -1085,13 +1006,9 @@
         </div>
       </div>
     </div>
-  </div>
 
-<<<<<<< HEAD
-=======
   </div><!-- /main-content -->
 
->>>>>>> 7fb4ba510767b55c2b2e54b33566cc8c073b54e2
   <footer>
     <div class="footer-brand">
       <span>SwagatAI v2.0</span>
@@ -1103,11 +1020,6 @@
       <span>Python Backend · Lightweight AI · No high-speed internet needed</span>
     </div>
   </footer>
-<<<<<<< HEAD
-</div>
-
-<script>
-=======
 
 <!-- KB Edit Modal -->
 <div class="edit-modal-overlay" id="editModalOverlay">
@@ -1145,7 +1057,6 @@
 
 <script>
 // ─── STATE ────────────────────────────────────────────
->>>>>>> 7fb4ba510767b55c2b2e54b33566cc8c073b54e2
 let lang = 'en';
 let mode = 'visitor';
 let isSpeaking = false;
@@ -1154,21 +1065,18 @@ let accurateCount = 0;
 let knowledgeBase = [];
 let unanswered = [];
 let currentTab = 'train';
-<<<<<<< HEAD
-let trainRecognition = null;
-let recognition = null;
-=======
 let levelAnimFrame = null;
 
 const LANG_NAMES = { or: 'Odia', hi: 'Hindi', en: 'English' };
 const LANG_FLAGS = { or: 'ଓ', hi: 'ह', en: 'E' };
->>>>>>> 7fb4ba510767b55c2b2e54b33566cc8c073b54e2
 
 const labels = {
   or: {
     greeting: "ନମସ୍କାର! ମୁଁ ସ୍ୱଗତ। ଆପଣଙ୍କୁ କିପରି ସାହାଯ୍ୟ କରିପାରିବି?",
     placeholder: "ଆପଣଙ୍କ ପ୍ରଶ୍ନ ଟାଇପ୍ କରନ୍ତୁ...",
     askBtn: "ପଚାର ↗",
+    thinking: "ଭାବୁଛି...",
+    notFound: "ମୁଁ ଏହା ଶିଖି ନାହିଁ। ମୋ AI ସହାୟକ ଉତ୍ତର ଦେଉଛି।",
     listening: "ଶୁଣୁଛି...",
     tagline: "ଆପଣଙ୍କ AI ଗ୍ରାହକ ସେବା ସହାୟକ",
   },
@@ -1176,6 +1084,8 @@ const labels = {
     greeting: "नमस्कार! मैं स्वागत हूँ। मैं आपकी कैसे मदद कर सकता हूँ?",
     placeholder: "अपना प्रश्न टाइप करें...",
     askBtn: "पूछें ↗",
+    thinking: "सोच रही हूँ...",
+    notFound: "यह मुझे नहीं पता। AI सहायक से उत्तर ले रही हूँ।",
     listening: "सुन रही हूँ...",
     tagline: "आपकी AI रिसेप्शन सहायक",
   },
@@ -1183,23 +1093,19 @@ const labels = {
     greeting: "Namaskara! I'm Swagat, your A I reception assistant. How may I help you today?",
     placeholder: "Type or speak your question...",
     askBtn: "Ask ↗",
+    thinking: "Thinking...",
+    notFound: "I don't have that information yet. Let me fetch an answer using AI.",
     listening: "Listening...",
     tagline: "Your AI Reception Assistant",
   }
 };
 
-<<<<<<< HEAD
-window.onload = async () => {
-  await fetchKB();
-=======
 // ─── INIT ───────────────────────────────────────────────
 window.onload = () => {
   fetchKB();
   checkAIStatus();   // ← Check if AI fallback is configured
   renderSuggestions();
->>>>>>> 7fb4ba510767b55c2b2e54b33566cc8c073b54e2
   updateStats();
-  
   setTimeout(() => {
     addMessage('ai', labels[lang].greeting, 'Swagata');
     triggerSpeak(labels[lang].greeting);
@@ -1212,8 +1118,6 @@ window.onload = () => {
   };
 };
 
-<<<<<<< HEAD
-=======
 async function checkAIStatus() {
   try {
     const res = await fetch('/api/ai-status');
@@ -1236,27 +1140,18 @@ async function checkAIStatus() {
   }
 }
 
->>>>>>> 7fb4ba510767b55c2b2e54b33566cc8c073b54e2
 async function fetchKB() {
   try {
     const res = await fetch('/api/kb');
     knowledgeBase = await res.json();
     renderKB();
   } catch (err) {
-<<<<<<< HEAD
-    console.error("Failed to load DB:", err);
-  }
-}
-
-function setLang(l) {
-=======
     console.log("DB Load Error - Ensure backend is running.");
   }
 }
 
 // ─── LANGUAGE SWITCH ─────────────────────────────────────
 function setLang(l, autoDetected = false) {
->>>>>>> 7fb4ba510767b55c2b2e54b33566cc8c073b54e2
   lang = l;
   document.querySelectorAll('.lang-btn').forEach(b => b.classList.remove('active', 'auto-detected'));
   const activeBtn = document.querySelector(`.lang-btn[onclick="setLang('${l}')"]`);
@@ -1296,10 +1191,7 @@ async function detectAndSwitchLang(text) {
   }
 }
 
-<<<<<<< HEAD
-=======
 // ─── MODE TOGGLE ──────────────────────────────────────────
->>>>>>> 7fb4ba510767b55c2b2e54b33566cc8c073b54e2
 function toggleMode() {
   if (mode === 'visitor') {
     const pass = prompt("Enter Admin Password:");
@@ -1319,12 +1211,8 @@ function toggleMode() {
   }
 }
 
-<<<<<<< HEAD
-function addMessage(role, text, name) {
-=======
 // ─── MESSAGING ────────────────────────────────────────────
 function addMessage(role, text, name, confidence = null, matchType = null, matchedQuestion = null, aiModel = null) {
->>>>>>> 7fb4ba510767b55c2b2e54b33566cc8c073b54e2
   const feed = document.getElementById('convoFeed');
   const now = new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
   const div = document.createElement('div');
@@ -1370,22 +1258,15 @@ function showTyping(show, label = 'Thinking...') {
   if (lbl) lbl.textContent = label;
 }
 
-<<<<<<< HEAD
-=======
 // ─── QUERY HANDLER ────────────────────────────────────────
->>>>>>> 7fb4ba510767b55c2b2e54b33566cc8c073b54e2
 async function sendVisitorQuery() {
   const input = document.getElementById('visitorInput');
   const q = input.value.trim();
   if (!q) return;
-<<<<<<< HEAD
-  
-=======
 
   // Auto-detect language from typed text before sending
   await detectAndSwitchLang(q);
 
->>>>>>> 7fb4ba510767b55c2b2e54b33566cc8c073b54e2
   input.value = '';
   addMessage('visitor', q, 'Visitor');
   queryCount++;
@@ -1406,25 +1287,11 @@ async function sendVisitorQuery() {
       await new Promise(r => setTimeout(r, 400)); // brief visual pause
     }
 
-<<<<<<< HEAD
-  try {
-    const res = await fetch('/api/ask', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ query: q, language: lang })
-    });
-    const data = await res.json();
-    
-    showTyping(false);
-    addMessage('ai', data.answer, data.source === 'knowledge_base' ? 'Swagata' : 'Swagata · AI Assist');
-    
-=======
     showTyping(false);
     const senderName = data.source === 'knowledge_base' ? 'Swagata' : 'Swagata · AI';
     const aiModel = data.source === 'ai_fallback' ? data.ai_model : null;
     addMessage('ai', data.answer, senderName, data.confidence || null, data.match_type || null, data.matched_question || null, aiModel);
 
->>>>>>> 7fb4ba510767b55c2b2e54b33566cc8c073b54e2
     if (data.source === 'ai_fallback') {
       document.getElementById('fallbackBadge').style.display = 'flex';
       if (!unanswered.includes(q)) {
@@ -1435,26 +1302,16 @@ async function sendVisitorQuery() {
       document.getElementById('fallbackBadge').style.display = 'none';
       accurateCount++;
     }
-<<<<<<< HEAD
-    
-    triggerSpeak(data.answer);
-    updateStats();
-
-=======
 
     triggerSpeak(data.answer);
     updateStats();
->>>>>>> 7fb4ba510767b55c2b2e54b33566cc8c073b54e2
   } catch (err) {
     showTyping(false);
     addMessage('ai', "Server error. Please check backend connection.", 'System');
   }
 }
 
-<<<<<<< HEAD
-=======
 // ─── TRAINING ─────────────────────────────────────────────
->>>>>>> 7fb4ba510767b55c2b2e54b33566cc8c073b54e2
 async function trainEntry() {
   const q = document.getElementById('trainQ').value.trim();
   const a = document.getElementById('trainA').value.trim();
@@ -1467,18 +1324,10 @@ async function trainEntry() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ question: q, answer: a, language: l })
     });
-<<<<<<< HEAD
-    
-    if (res.ok) {
-      document.getElementById('trainQ').value = '';
-      document.getElementById('trainA').value = '';
-      await fetchKB(); 
-=======
     if (res.ok) {
       document.getElementById('trainQ').value = '';
       document.getElementById('trainA').value = '';
       await fetchKB();
->>>>>>> 7fb4ba510767b55c2b2e54b33566cc8c073b54e2
       updateStats();
       showToast('✓ Added to Knowledge Base!', 'success');
     }
@@ -1487,56 +1336,6 @@ async function trainEntry() {
   }
 }
 
-<<<<<<< HEAD
-function trainByVoice() {
-  const btn = document.querySelector('.train-form .btn-voice');
-  
-  if (btn.classList.contains('listening')) {
-    stopTrainListen(btn);
-    return;
-  }
-
-  const selectedLang = document.getElementById('trainLang').value;
-  btn.classList.add('listening');
-  showToast('Listening... Speak the answer now.', 'info');
-
-  if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
-    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-    trainRecognition = new SR();
-    
-    trainRecognition.lang = selectedLang === 'or' ? 'or-IN' : selectedLang === 'hi' ? 'hi-IN' : 'en-IN';
-    trainRecognition.interimResults = false;
-    
-    trainRecognition.onresult = (e) => {
-      const transcript = e.results[0][0].transcript;
-      document.getElementById('trainA').value = transcript;
-      stopTrainListen(btn);
-      showToast('Voice captured!', 'success');
-    };
-    
-    trainRecognition.onerror = () => {
-      showToast('Didn\'t catch that. Try again.', 'info');
-      stopTrainListen(btn);
-    };
-    
-    trainRecognition.onend = () => { 
-      stopTrainListen(btn); 
-    };
-    
-    trainRecognition.start();
-  } else {
-    showToast('Speech recognition not supported in your browser.', 'info');
-    stopTrainListen(btn);
-  }
-}
-
-function stopTrainListen(btn) {
-  if (trainRecognition) { 
-    try { trainRecognition.stop(); } catch(e){} 
-    trainRecognition = null; 
-  }
-  if (btn) btn.classList.remove('listening');
-=======
 async function removeKB(id) {
   try {
     const res = await fetch(`/api/kb/${id}`, { method: 'DELETE' });
@@ -1633,7 +1432,6 @@ async function saveKBEdit() {
 function clearKB() {
   if (!confirm('Clear all knowledge base entries?')) return;
   showToast("Please remove entries individually or reset the DB file.", "info");
->>>>>>> 7fb4ba510767b55c2b2e54b33566cc8c073b54e2
 }
 
 function renderKB() {
@@ -1641,13 +1439,6 @@ function renderKB() {
   if (knowledgeBase.length === 0) {
     list.innerHTML = '<div style="color:var(--muted);font-size:12px;padding:8px">No entries yet. Add some above!</div>';
   } else {
-<<<<<<< HEAD
-    list.innerHTML = knowledgeBase.map(e => `
-      <div class="trained-item" title="${e.a}">
-        <span style="flex:1"><strong style="color:#E0EAF8">${e.q}</strong><br><span style="color:var(--muted);font-size:11px">${e.lang.toUpperCase()} · ${e.a.substring(0,50)}${e.a.length>50?'…':''}</span></span>
-        <span onclick="removeKB(${e.id})" style="cursor:pointer;color:var(--muted);font-size:14px;flex-shrink:0">✕</span>
-      </div>`).join('');
-=======
     const trained = knowledgeBase.filter(e => !e.ai_cached);
     const cached  = knowledgeBase.filter(e => e.ai_cached);
 
@@ -1689,27 +1480,10 @@ function renderKB() {
     }
 
     list.innerHTML = html;
->>>>>>> 7fb4ba510767b55c2b2e54b33566cc8c073b54e2
   }
   document.getElementById('kbCountLabel').textContent = knowledgeBase.length;
 }
 
-<<<<<<< HEAD
-async function removeKB(id) {
-  try {
-    const res = await fetch(`/api/kb/${id}`, { method: 'DELETE' });
-    if (res.ok) {
-      await fetchKB();
-      updateStats();
-      showToast('Entry removed.', 'info');
-    }
-  } catch (e) {
-    console.error(e);
-  }
-}
-
-=======
->>>>>>> 7fb4ba510767b55c2b2e54b33566cc8c073b54e2
 function renderSuggestions() {
   const list = document.getElementById('suggestionsList');
   if (unanswered.length === 0) {
@@ -1739,10 +1513,7 @@ function switchTab(tab, btn) {
   else document.querySelectorAll('.tab-btn')[['train','kb','suggestions'].indexOf(tab)].classList.add('active');
 }
 
-<<<<<<< HEAD
-=======
 // ─── SPEAKING ANIMATION (TTS) ─────────────────────────────
->>>>>>> 7fb4ba510767b55c2b2e54b33566cc8c073b54e2
 function triggerSpeak(text) {
   const shell = document.getElementById('appShell');
   const face = document.getElementById('face');
@@ -1750,17 +1521,6 @@ function triggerSpeak(text) {
   face.classList.add('speaking');
   document.getElementById('statusText').textContent = 'Speaking...';
 
-<<<<<<< HEAD
-  const duration = Math.max(1500, text.length * 55);
-  
-  if ('speechSynthesis' in window) {
-    const utter = new SpeechSynthesisUtterance(text);
-    utter.lang = lang === 'or' ? 'or-IN' : lang === 'hi' ? 'hi-IN' : 'en-IN';
-    utter.rate = 0.9; utter.pitch = 1.1;
-    utter.onend = () => stopSpeaking();
-    window.speechSynthesis.cancel();
-    window.speechSynthesis.speak(utter);
-=======
   if (lang === 'or') {
     fetch('/api/tts/odia', {
       method: 'POST',
@@ -1774,7 +1534,6 @@ function triggerSpeak(text) {
       audio.play();
     })
     .catch(stopSpeaking);
->>>>>>> 7fb4ba510767b55c2b2e54b33566cc8c073b54e2
   } else {
     if ('speechSynthesis' in window) {
       const utter = new SpeechSynthesisUtterance(text);
@@ -1797,8 +1556,6 @@ function stopSpeaking() {
   document.getElementById('statusText').textContent = 'Ready to help';
 }
 
-<<<<<<< HEAD
-=======
 // ─── MIC LEVEL METER (visual feedback while recording) ─────
 function startLevelMeter(stream) {
   const ctx = new AudioContext();
@@ -1829,7 +1586,6 @@ let recognition = null;
 let isOdiaBackendRecording = false;
 let stopLevelMeterFn = null;
 
->>>>>>> 7fb4ba510767b55c2b2e54b33566cc8c073b54e2
 function toggleListen() {
   const overlay = document.getElementById('listenOverlay');
   const btn = document.getElementById('voiceBtn');
@@ -1858,12 +1614,6 @@ function toggleListen() {
         .catch(() => {}); // Non-critical
     }
   } else {
-<<<<<<< HEAD
-    setTimeout(() => {
-      document.getElementById('visitorInput').value = "Please test in Chrome or Edge for voice recognition.";
-      stopListening();
-    }, 2000);
-=======
     // ENGLISH / HINDI: Web Speech API with auto-lang detection
     document.getElementById('listenLang').textContent = labels[lang].listening;
     submitBtn.style.display = 'none';
@@ -1897,7 +1647,6 @@ function toggleListen() {
       recognition.onend = () => stopListening(true);
       try { recognition.start(); } catch(e) { stopListening(true); }
     }
->>>>>>> 7fb4ba510767b55c2b2e54b33566cc8c073b54e2
   }
 }
 
@@ -1927,8 +1676,6 @@ async function detectLangFromText(text) {
   }
 }
 
-<<<<<<< HEAD
-=======
 // ─── ODIA FINISH BUTTON ──────────────────────────────────
 async function stopOdiaAndProcess() {
   if (!isOdiaBackendRecording) return;
@@ -2052,7 +1799,6 @@ function stopTrainListen(btn, forceCancel = false) {
 }
 
 // ─── UTILS ────────────────────────────────────────────────
->>>>>>> 7fb4ba510767b55c2b2e54b33566cc8c073b54e2
 function useHint(el) {
   document.getElementById('visitorInput').value = el.textContent;
   document.getElementById('visitorInput').focus();
@@ -2079,11 +1825,7 @@ function saveProfile() {
     .catch(() => showToast('Save failed', 'danger'));
 }
 
-<<<<<<< HEAD
-function showToast(msg, type='info') {
-=======
 function showToast(msg, type = 'info') {
->>>>>>> 7fb4ba510767b55c2b2e54b33566cc8c073b54e2
   const c = document.getElementById('toastContainer');
   const t = document.createElement('div');
   t.className = `toast ${type}`;
@@ -2097,10 +1839,7 @@ function showToast(msg, type = 'info') {
   }, 3000);
 }
 
-<<<<<<< HEAD
-=======
 // ─── KEYBOARD SHORTCUTS ────────────────────────────────────
->>>>>>> 7fb4ba510767b55c2b2e54b33566cc8c073b54e2
 document.addEventListener('keydown', e => {
   if (e.key === 'Escape') {
     stopListening(true);
